@@ -181,7 +181,7 @@ let topArtistsShort=[],topArtistsMed=[],topArtistsLong=[];
 let topTracksShort=[],topTracksMed=[];
 let recentTracks=[],recentTrackUris=new Set();
 let djActive=false,queuedNext=false,currentTrackUri=null;
-let activeGenres=new Set();
+let activeGenres=new Set(),artistGenreMap=new Map();
 
 (function(){
   const p=new URLSearchParams(window.location.search),code=p.get('code');
@@ -232,6 +232,8 @@ async function analyzeProfile(){
     apiFetch('https://api.spotify.com/v1/me/top/artists?limit=20&time_range=long_term').then(r=>r.ok?r.json():{items:[]})
   ]);
   topArtistsShort=s.items||[];topArtistsMed=m.items||[];topArtistsLong=l.items||[];
+  artistGenreMap=new Map();
+  [...topArtistsShort,...topArtistsMed,...topArtistsLong].forEach(a=>{if(a.id)artistGenreMap.set(a.id,a.genres||[]);});
   status.textContent='Analizando canciones favoritas...';
   const[ts,tm]=await Promise.all([
     apiFetch('https://api.spotify.com/v1/me/top/tracks?limit=50&time_range=short_term').then(r=>r.ok?r.json():{items:[]}),
@@ -314,8 +316,9 @@ async function autoQueue(){
 
 function artistMatchesGenres(a){
   if(!activeGenres.size)return true;
-  if(!a.genres||!a.genres.length)return true;
-  return a.genres.some(g=>activeGenres.has(g));
+  const genres=a.genres||(a.id?artistGenreMap.get(a.id):null)||[];
+  if(!genres.length)return true;
+  return genres.some(g=>activeGenres.has(g));
 }
 function toggleGenre(el){
   const g=el.dataset.genre;
@@ -325,7 +328,7 @@ function toggleGenre(el){
 
 function getPool(mode){
   const pool=[];
-  if(mode==='new'||mode==='mix'){topArtistsShort.filter(artistMatchesGenres).forEach(a=>{pool.push(a);pool.push(a);pool.push(a);});recentTracks.slice(0,20).forEach(i=>{const a={id:i.track.artists[0].id,name:i.track.artists[0].name};pool.push(a);pool.push(a);});}
+  if(mode==='new'||mode==='mix'){topArtistsShort.filter(artistMatchesGenres).forEach(a=>{pool.push(a);pool.push(a);pool.push(a);});recentTracks.slice(0,20).forEach(i=>{const a={id:i.track.artists[0].id,name:i.track.artists[0].name};if(artistMatchesGenres(a)){pool.push(a);pool.push(a);}});}
   if(mode==='mix'||mode==='deep'){topArtistsMed.filter(artistMatchesGenres).forEach(a=>pool.push(a));topArtistsLong.filter(artistMatchesGenres).forEach(a=>pool.push(a));}
   if(mode==='deep'){topArtistsLong.slice(10).filter(artistMatchesGenres).forEach(a=>{pool.push(a);pool.push(a);});}
   return pool;
@@ -336,7 +339,8 @@ async function findSmartTrack(mode){
   const pool=getPool(mode);
   // Try searching by artist from pool
   for(let i=0;i<8;i++){
-    const artist=pick(pool.length?pool:topArtistsMed);
+    const filteredFallback=topArtistsMed.filter(artistMatchesGenres);
+    const artist=pick(pool.length?pool:(filteredFallback.length?filteredFallback:topArtistsMed));
     if(!artist||!artist.name)continue;
     let tracks=[];
     if(artist.id){
