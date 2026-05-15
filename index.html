@@ -1292,6 +1292,7 @@ async function playTrackNow(track) {
     S.playHistory.push(track);
     if (S.playHistory.length > 80) S.playHistory.shift();
     S.currentTrack = track;
+    S.lastShownUri = track.uri;
     S._trackStartTime = Date.now();
     renderNowPlaying(track);
     checkIsLiked(trackId(track.uri));
