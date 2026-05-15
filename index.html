@@ -301,13 +301,11 @@ async function findSmartTrack(mode){
     const artist=pick(pool.length?pool:topArtistsMed);
     if(!artist||!artist.name)continue;
     let tracks=[];
-    if(mode==='new'&&artist.id){
-      // Get artist top tracks (more reliable than album search)
-      const ar=await apiFetch(`https://api.spotify.com/v1/artists/${artist.id}/top-tracks?market=MX`);
+    if(artist.id){
+      const ar=await apiFetch(`https://api.spotify.com/v1/artists/${artist.id}/top-tracks?market=from_token`);
       if(ar.ok){const d=await ar.json();tracks=d.tracks||[];}
     } else {
-      // Simple name search - no quotes, more permissive
-      const sr=await apiFetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(artist.name)}&type=track&limit=20&market=MX`);
+      const sr=await apiFetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(artist.name)}&type=track&limit=20&market=from_token`);
       if(sr.ok){const d=await sr.json();tracks=d.tracks?.items||[];}
     }
     const fresh=tracks.filter(t=>!recentTrackUris.has(t.uri));
