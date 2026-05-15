@@ -682,43 +682,122 @@ async function detectGenres(artist) {
 // ══════════════════════════════════════════════════════════
 //  AI GENRE GROUPING
 // ══════════════════════════════════════════════════════════
-async function groupGenresWithAI() {
-  if (!S.anthropicKey || S.allGenres.length < 3) return;
-  setProgress(61, 'Agrupando géneros con IA...');
-  try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': S.anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true', 'content-type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
-        messages: [{
-          role: 'user',
-          content: `Agrupa estos géneros musicales en familias (máximo 8 grupos). Devuelve SOLO JSON sin markdown:\n{"grupos":[{"nombre":"string","icono":"emoji","generos":["string"]}]}\n\nGéneros: ${S.allGenres.join(', ')}`,
-        }],
-      }),
+
+// Always-available local fallback grouping
+function groupGenresLocally() {
+  const FAMILIES = [
+    { nombre: 'Urbano Latino', icon: '🌴', keys: ['reggaeton','trap latino','latin trap','dembow','urbano','perreo','bachata','salsa','cumbia','reggae en espanol'] },
+    { nombre: 'Rap / Hip-hop',  icon: '🎤', keys: ['rap','hip hop','hip-hop','hip hop latino','spanish rap','underground rap','trap','drill','boom bap','crunk'] },
+    { nombre: 'Electrónica',    icon: '🎛️', keys: ['electronic','house','techno','idm','drum and bass','edm','electro','synthwave','trance','dubstep','ambient electronica','garage'] },
+    { nombre: 'Ambient / Focus',icon: '🌙', keys: ['ambient','chillout','downtempo','instrumental','easy listening','lo-fi','lofi','new age','meditation','sleep','study'] },
+    { nombre: 'Rock / Metal',   icon: '🎸', keys: ['rock','punk','hardcore','metal','alternative','grunge','indie rock','post-rock','emo','shoegaze','prog'] },
+    { nombre: 'Regional',       icon: '🤠', keys: ['corrido','corridos tumbados','corrido tumbado','mexican','regional mexican','banda','norteno','norteño','grupero','sierreno','cumbia'] },
+    { nombre: 'Pop',            icon: '✨', keys: ['pop','latin pop','indie pop','synth-pop','dance pop','electropop','k-pop','teen pop','dream pop'] },
+  ];
+
+  const assigned = new Set();
+  const groups = [];
+  for (const fam of FAMILIES) {
+    const matched = S.allGenres.filter(g => {
+      const gl = g.toLowerCase();
+      return fam.keys.some(k => gl === k || gl.includes(k) || k.includes(gl));
     });
-    const d = await r.json();
-    const text = d?.content?.[0]?.text?.trim();
-    if (!text) return;
-    const json = JSON.parse(text);
-    if (json?.grupos?.length) {
+    if (matched.length) {
+      matched.forEach(g => assigned.add(g));
+      groups.push({ id: `grp-local-${groups.length}`, nombre: fam.nombre, icon: fam.icon, generos: matched });
+    }
+  }
+  const others = S.allGenres.filter(g => !assigned.has(g));
+  if (others.length) groups.push({ id: 'grp-otros', nombre: 'Otros', icon: '🎶', generos: others });
+  S.genreGroups = groups;
+  console.log('[DJ Claudio] Grupos locales creados:', groups.map(g => `${g.nombre}(${g.generos.length})`).join(', '));
+}
+
+async function groupGenresWithAI() {
+  if (S.allGenres.length < 2) return;
+
+  // --- Try Anthropic API ---
+  if (S.anthropicKey) {
+    setProgress(61, 'Agrupando géneros con IA...');
+    try {
+      console.log('[DJ Claudio] Llamando Anthropic para agrupar', S.allGenres.length, 'géneros. Key prefix:', S.anthropicKey.slice(0,12) + '...');
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': S.anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-allow-browser': 'true',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 900,
+          messages: [{
+            role: 'user',
+            content: `Agrupa estos géneros musicales en familias (máximo 8 grupos). Devuelve SOLO JSON sin markdown: {"grupos":[{"nombre":"string","icono":"emoji","generos":["string"]}]}\n\nGéneros: ${S.allGenres.join(', ')}`,
+          }],
+        }),
+      });
+
+      if (!r.ok) {
+        const errBody = await r.text().catch(() => '');
+        console.error('[DJ Claudio] Anthropic HTTP', r.status, errBody);
+        setProgress(61, `Anthropic error ${r.status} — usando grupos locales`);
+        groupGenresLocally(); return;
+      }
+
+      const d = await r.json();
+      console.log('[DJ Claudio] Anthropic response:', JSON.stringify(d).slice(0, 300));
+
+      const rawText = d?.content?.[0]?.text?.trim() || '';
+      // Strip markdown code fences if present (```json ... ```)
+      const text = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+      if (!text) {
+        console.error('[DJ Claudio] Anthropic devolvió texto vacío. d=', d);
+        setProgress(61, 'Respuesta IA vacía — usando grupos locales');
+        groupGenresLocally(); return;
+      }
+
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (parseErr) {
+        console.error('[DJ Claudio] JSON.parse falló. texto recibido:', text.slice(0, 200), parseErr);
+        setProgress(61, 'JSON inválido de IA — usando grupos locales');
+        groupGenresLocally(); return;
+      }
+
+      if (!json?.grupos?.length) {
+        console.error('[DJ Claudio] Sin campo "grupos" en la respuesta:', json);
+        setProgress(61, 'Estructura IA inesperada — usando grupos locales');
+        groupGenresLocally(); return;
+      }
+
       S.genreGroups = json.grupos.map((g, i) => ({
         id: `grp-${i}`,
-        nombre: g.nombre,
+        nombre: g.nombre || `Grupo ${i+1}`,
         icon: g.icono || '🎵',
         generos: (g.generos || []).filter(x => S.allGenres.includes(x)),
-      }));
-      // Genres not assigned to any group → put in "Otros"
+      })).filter(g => g.generos.length > 0);
+
       const assigned = new Set(S.genreGroups.flatMap(g => g.generos));
       const others = S.allGenres.filter(g => !assigned.has(g));
       if (others.length) S.genreGroups.push({ id: 'grp-others', nombre: 'Otros', icon: '🎶', generos: others });
+
+      console.log('[DJ Claudio] Grupos IA:', S.genreGroups.map(g => `${g.nombre}(${g.generos.length})`).join(', '));
+      return; // success — skip local fallback
+
+    } catch (e) {
+      console.error('[DJ Claudio] groupGenresWithAI exception:', e);
+      setProgress(61, 'Error IA — usando grupos locales');
     }
-  } catch (e) {
-    console.warn('Genre grouping failed:', e);
-    // Fallback: one big group
-    S.genreGroups = [{ id: 'grp-all', nombre: 'Todos los géneros', icon: '🎵', generos: S.allGenres }];
+  } else {
+    console.log('[DJ Claudio] Sin Anthropic key — agrupando localmente');
   }
+
+  // --- Local fallback (always runs if AI didn't succeed) ---
+  groupGenresLocally();
 }
 
 // ══════════════════════════════════════════════════════════
