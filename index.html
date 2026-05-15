@@ -234,6 +234,13 @@ async function analyzeProfile(){
   topArtistsShort=s.items||[];topArtistsMed=m.items||[];topArtistsLong=l.items||[];
   artistGenreMap=new Map();
   [...topArtistsShort,...topArtistsMed,...topArtistsLong].forEach(a=>{if(a.id)artistGenreMap.set(a.id,a.genres||[]);});
+  // Fetch genres for recent-track artists not already in the map
+  const freshIds=[...new Set(recentTracks.map(i=>i.track.artists[0]?.id).filter(Boolean))].filter(id=>!artistGenreMap.has(id));
+  if(freshIds.length){
+    status.textContent='Enriqueciendo géneros...';
+    const ar=await apiFetch(`https://api.spotify.com/v1/artists?ids=${freshIds.slice(0,50).join(',')}`);
+    if(ar.ok){const d=await ar.json();(d.artists||[]).forEach(a=>{if(a&&a.id)artistGenreMap.set(a.id,a.genres||[]);});}
+  }
   status.textContent='Analizando canciones favoritas...';
   const[ts,tm]=await Promise.all([
     apiFetch('https://api.spotify.com/v1/me/top/tracks?limit=50&time_range=short_term').then(r=>r.ok?r.json():{items:[]}),
@@ -246,9 +253,7 @@ async function analyzeProfile(){
   document.getElementById('stat-recent').textContent=recentTracks.length;
   document.getElementById('artist-chips').innerHTML=topArtistsShort.slice(0,8).map(a=>`<span class="chip">${a.name}</span>`).join('');
   const genreCount=new Map();
-  [...topArtistsShort,...topArtistsMed,...topArtistsLong].forEach(a=>{
-    (a.genres||[]).forEach(g=>genreCount.set(g,(genreCount.get(g)||0)+1));
-  });
+  artistGenreMap.forEach(genres=>genres.forEach(g=>genreCount.set(g,(genreCount.get(g)||0)+1)));
   const genres=[...genreCount.entries()].sort((a,b)=>b[1]-a[1]).slice(0,20).map(([g])=>g);
   activeGenres=new Set(genres);
   if(genres.length){
