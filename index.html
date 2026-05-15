@@ -174,6 +174,7 @@ let durMs=0,progMs=0,djMode='mix';
 let topArtistsShort=[],topArtistsMed=[],topArtistsLong=[];
 let topTracksShort=[],topTracksMed=[];
 let recentTracks=[],recentTrackUris=new Set();
+let djActive=false,queuedNext=false,currentTrackUri=null;
 
 (function(){
   const p=new URLSearchParams(window.location.search),code=p.get('code');
@@ -209,7 +210,7 @@ async function onConnected(){
   await analyzeProfile();
   document.getElementById('big-play-btn').classList.remove('hidden');
   setInterval(getCurrentPlayback,12000);
-  setInterval(()=>{if(playing){progMs=Math.min(progMs+1000,durMs);updateProg();}},1000);
+  setInterval(()=>{if(playing){progMs=Math.min(progMs+1000,durMs);updateProg();if(djActive&&durMs>0&&(durMs-progMs)<30000&&!queuedNext){queuedNext=true;autoQueue();}}},1000);
 }
 
 async function analyzeProfile(){
@@ -280,10 +281,19 @@ async function startDJ(){
   btn.classList.add('hidden');
   document.getElementById('player-card').classList.remove('hidden');
   document.getElementById('dj-card').classList.remove('hidden');
+  djActive=true;
   addLog('▶ '+first.name+' — '+first.artists[0].name);
   setTimeout(getCurrentPlayback,1000);
 }
 function setStartMsg(t){document.getElementById('start-msg').textContent=t;}
+
+async function autoQueue(){
+  const t=await findSmartTrack(djMode);
+  if(!t)return;
+  await apiFetch('https://api.spotify.com/v1/me/player/queue?uri='+encodeURIComponent(t.uri),{method:'POST'});
+  recentTrackUris.add(t.uri);
+  addLog('+ auto → '+t.name+' — '+t.artists[0].name);
+}
 
 function getPool(mode){
   const pool=[];
@@ -356,6 +366,7 @@ function fmt(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return m+':'+Str
 function updateUI(d){
   if(!d||!d.item){document.getElementById('track-name').textContent='Sin reproducción activa';document.getElementById('track-artist').textContent='Abre Spotify en tu dispositivo';return;}
   const it=d.item;playing=d.is_playing;shuffle=d.shuffle_state;repeat=d.repeat_state;durMs=it.duration_ms;progMs=d.progress_ms;
+  if(it.uri!==currentTrackUri){currentTrackUri=it.uri;queuedNext=false;}
   document.getElementById('track-name').textContent=it.name;
   document.getElementById('track-artist').textContent=it.artists.map(a=>a.name).join(', ');
   document.getElementById('track-album').textContent=it.album.name;
