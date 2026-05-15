@@ -45,7 +45,9 @@ input:focus { border-color: var(--green); }
 .profile-stat .num { font-size: 22px; font-weight: 800; color: var(--green); }
 .profile-stat .lbl { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 4px; }
 .artist-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { font-family: 'Space Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 20px; background: rgba(29,185,84,0.08); border: 1px solid rgba(29,185,84,0.2); color: var(--green); }
+.chip { font-family: 'Space Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 20px; background: rgba(29,185,84,0.08); border: 1px solid rgba(29,185,84,0.2); color: var(--green); cursor: default; }
+.genre-chip { cursor: pointer; transition: all 0.15s; user-select: none; }
+.genre-chip.off { background: transparent; border-color: var(--border); color: var(--muted); }
 .now-playing { display: flex; gap: 16px; align-items: center; margin-bottom: 1.25rem; }
 .album-art { width: 80px; height: 80px; border-radius: 10px; object-fit: cover; background: var(--surface2); border: 1px solid var(--border); flex-shrink: 0; }
 .track-info { flex: 1; min-width: 0; }
@@ -107,6 +109,10 @@ svg.icon { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-wid
       <div class="profile-stat"><div class="num" id="stat-recent">—</div><div class="lbl">recientes</div></div>
     </div>
     <div class="artist-chips" id="artist-chips"></div>
+    <div id="genre-section" class="hidden" style="margin-top:1rem;">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-bottom:8px;">GÉNEROS ACTIVOS — toca para activar/desactivar</div>
+      <div class="artist-chips" id="genre-chips"></div>
+    </div>
     <button class="big-play-btn hidden" id="big-play-btn" onclick="startDJ()">
       <svg style="width:32px;height:32px;flex-shrink:0;" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       Iniciar DJ
@@ -175,6 +181,7 @@ let topArtistsShort=[],topArtistsMed=[],topArtistsLong=[];
 let topTracksShort=[],topTracksMed=[];
 let recentTracks=[],recentTrackUris=new Set();
 let djActive=false,queuedNext=false,currentTrackUri=null;
+let activeGenres=new Set();
 
 (function(){
   const p=new URLSearchParams(window.location.search),code=p.get('code');
@@ -236,6 +243,16 @@ async function analyzeProfile(){
   document.getElementById('stat-tracks').textContent=new Set([...topTracksShort,...topTracksMed].map(t=>t.id)).size;
   document.getElementById('stat-recent').textContent=recentTracks.length;
   document.getElementById('artist-chips').innerHTML=topArtistsShort.slice(0,8).map(a=>`<span class="chip">${a.name}</span>`).join('');
+  const genreCount=new Map();
+  [...topArtistsShort,...topArtistsMed,...topArtistsLong].forEach(a=>{
+    (a.genres||[]).forEach(g=>genreCount.set(g,(genreCount.get(g)||0)+1));
+  });
+  const genres=[...genreCount.entries()].sort((a,b)=>b[1]-a[1]).slice(0,20).map(([g])=>g);
+  activeGenres=new Set(genres);
+  if(genres.length){
+    document.getElementById('genre-chips').innerHTML=genres.map(g=>`<button class="chip genre-chip" data-genre="${g}" onclick="toggleGenre(this)">${g}</button>`).join('');
+    document.getElementById('genre-section').classList.remove('hidden');
+  }
   status.textContent='✓ Perfil analizado — listo para empezar';
   dot.className='dot on';
 }
@@ -295,11 +312,22 @@ async function autoQueue(){
   addLog('+ auto → '+t.name+' — '+t.artists[0].name);
 }
 
+function artistMatchesGenres(a){
+  if(!activeGenres.size)return true;
+  if(!a.genres||!a.genres.length)return true;
+  return a.genres.some(g=>activeGenres.has(g));
+}
+function toggleGenre(el){
+  const g=el.dataset.genre;
+  if(activeGenres.has(g)){activeGenres.delete(g);el.classList.add('off');}
+  else{activeGenres.add(g);el.classList.remove('off');}
+}
+
 function getPool(mode){
   const pool=[];
-  if(mode==='new'||mode==='mix'){topArtistsShort.forEach(a=>{pool.push(a);pool.push(a);pool.push(a);});recentTracks.slice(0,20).forEach(i=>{const a={id:i.track.artists[0].id,name:i.track.artists[0].name};pool.push(a);pool.push(a);});}
-  if(mode==='mix'||mode==='deep'){topArtistsMed.forEach(a=>pool.push(a));topArtistsLong.forEach(a=>pool.push(a));}
-  if(mode==='deep'){topArtistsLong.slice(10).forEach(a=>{pool.push(a);pool.push(a);});}
+  if(mode==='new'||mode==='mix'){topArtistsShort.filter(artistMatchesGenres).forEach(a=>{pool.push(a);pool.push(a);pool.push(a);});recentTracks.slice(0,20).forEach(i=>{const a={id:i.track.artists[0].id,name:i.track.artists[0].name};pool.push(a);pool.push(a);});}
+  if(mode==='mix'||mode==='deep'){topArtistsMed.filter(artistMatchesGenres).forEach(a=>pool.push(a));topArtistsLong.filter(artistMatchesGenres).forEach(a=>pool.push(a));}
+  if(mode==='deep'){topArtistsLong.slice(10).filter(artistMatchesGenres).forEach(a=>{pool.push(a);pool.push(a);});}
   return pool;
 }
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
