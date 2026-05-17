@@ -110,6 +110,12 @@ input.mood-dual-range { position: absolute; width: 100%; height: 12px; -webkit-a
 input.mood-dual-range::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 26px; background: linear-gradient(180deg, #6060a0 0%, #2a2a50 50%, #1a1a3e 100%); border: 1px solid rgba(168,85,247,0.6); border-radius: 4px; cursor: grab; box-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 0 8px rgba(168,85,247,0.2); }
 input.mood-dual-range::-webkit-slider-runnable-track { background: transparent; height: 12px; }
 input.mood-dual-range.mood-max::-webkit-slider-thumb { background: linear-gradient(180deg, #40a0c0 0%, #1a5070 50%, #0a2a40 100%); border-color: rgba(34,211,238,0.6); box-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 0 8px rgba(34,211,238,0.2); }
+.mood-pct-row { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; margin-top: 0.15rem; }
+.mood-pct-lbl { font-family: 'Space Mono', monospace; font-size: 0.55rem; color: var(--muted); }
+.mood-pct-inp { font-family: 'Space Mono', monospace; font-size: 0.65rem; width: 44px; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; color: var(--accent); padding: 0.2rem 0.35rem; text-align: center; outline: none; -moz-appearance: textfield; }
+.mood-pct-inp::-webkit-outer-spin-button, .mood-pct-inp::-webkit-inner-spin-button { -webkit-appearance: none; }
+.mood-pct-inp:focus { border-color: var(--accent); }
+.mood-pct-sep { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--muted); }
 
 /* ── MAIN DJ BUTTON ── */
 .dj-command { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
@@ -154,7 +160,8 @@ input.mood-dual-range.mood-max::-webkit-slider-thumb { background: linear-gradie
     inset 0 2px 4px rgba(255,255,255,0.04);
 }
 .btn-dj-main.stop::after { border-color: rgba(248,113,113,0.2); }
-.dj-label { font-family: 'Space Mono', monospace; font-size: 0.58rem; color: var(--muted); text-align: center; letter-spacing: 0.08em; }
+.dj-label { font-family: 'Space Mono', monospace; font-size: 0.62rem; font-weight: 700; color: var(--text); text-align: center; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.2rem 0.75rem; border-radius: 5px; background: var(--surface2); border: 1px solid var(--border); transition: all 0.2s; }
+.dj-label.running { color: var(--green); border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.08); box-shadow: 0 0 8px rgba(74,222,128,0.15); }
 .pool-count { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--accent); text-align: center; }
 
 /* ── MODE CHIPS ── */
@@ -246,7 +253,7 @@ input.mood-dual-range.mood-max::-webkit-slider-thumb { background: linear-gradie
 .gtoggle.mixed::after { transform: translateX(6px); }
 
 /* ── PLAYER COLUMN ── */
-.player-col { border-left: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+.player-col { border-left: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: visible; min-height: 0; }
 .dj-live-bar { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 1.4rem; background: var(--surface2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
 .live-dot.on { background: var(--green); animation: blink 1.6s ease infinite; }
@@ -282,6 +289,15 @@ input.mood-dual-range.mood-max::-webkit-slider-thumb { background: linear-gradie
   text-decoration: line-through; opacity: 0.65;
 }
 .tg-pill.off:hover { border-color: var(--accent); opacity: 1; }
+/* User-created label pills — cyan, with pencil marker */
+.tg-pill.user-label {
+  background: rgba(34,211,238,0.12); color: var(--cyan);
+  border-color: rgba(34,211,238,0.35);
+}
+.tg-pill.user-label:hover { background: rgba(34,211,238,0.25); }
+.tg-pill.user-label.off { color: var(--muted); border-color: var(--border); background: transparent; }
+/* g-tag user label variant */
+.g-tag.user-label { border-color: rgba(34,211,238,0.35); color: var(--cyan); background: rgba(34,211,238,0.08); }
 /* Queue genre pills */
 .q-pills { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; }
 .q-pill {
@@ -377,7 +393,7 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
 /* ── OPTIONS MENU ── */
 .btn-options { background: none; border: none; color: var(--muted); font-size: 1rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; transition: all 0.15s; }
 .btn-options:hover { color: var(--text); background: rgba(255,255,255,0.06); }
-.options-menu { position: absolute; right: 0; top: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 0.4rem; z-index: 800; min-width: 210px; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.5); margin-top: 4px; }
+.options-menu { position: fixed; right: auto; top: auto; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 0.4rem; z-index: 9990; min-width: 220px; display: none; box-shadow: 0 8px 32px rgba(0,0,0,0.7); }
 .options-menu.open { display: flex; flex-direction: column; }
 .options-wrap { position: relative; }
 .opt-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.75rem; border-radius: 7px; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text); transition: background 0.15s; background: none; border: none; width: 100%; text-align: left; }
@@ -580,8 +596,6 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
   <header class="app-header">
     <div class="hdr-logo">DJ<em>·</em>CLAUDIO</div>
     <div class="hdr-right">
-      <button class="btn-hdr-search" onclick="openSearch()">🔍 Buscar</button>
-      <button class="btn-sm" onclick="renderVetoList();openModal('modal-vetoes')">🚫 Vetos</button>
       <img class="hdr-avatar" id="hdr-avatar" src="" alt="" style="display:none">
       <span class="hdr-name" id="hdr-name"></span>
       <button class="btn-sm" onclick="logout()">Salir</button>
@@ -599,7 +613,6 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
         <div class="mood-dual">
           <div class="mood-dual-label">
             <span>⚡ Energía</span>
-            <span class="mood-dual-vals" id="pitch-e-vals">0.0 – 1.0</span>
           </div>
           <div class="mood-dual-row">
             <span class="mood-dual-emoji">😴</span>
@@ -610,6 +623,13 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
               <input class="mood-dual-range mood-max" type="range" id="mood-emax" min="0" max="100" value="100" oninput="updateMoodSlider()">
             </div>
             <span class="mood-dual-emoji">⚡</span>
+          </div>
+          <div class="mood-pct-row">
+            <span class="mood-pct-lbl">mín</span>
+            <input class="mood-pct-inp" id="emin-pct" type="number" min="0" max="100" value="0" onchange="setPctManual('emin',this.value)">
+            <span class="mood-pct-sep">%&nbsp;—</span>
+            <input class="mood-pct-inp" id="emax-pct" type="number" min="0" max="100" value="100" onchange="setPctManual('emax',this.value)">
+            <span class="mood-pct-lbl">% máx</span>
           </div>
         </div>
 
@@ -641,7 +661,6 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
         <div class="mood-dual">
           <div class="mood-dual-label">
             <span>😄 Vibra</span>
-            <span class="mood-dual-vals" id="pitch-v-vals">0.0 – 1.0</span>
           </div>
           <div class="mood-dual-row">
             <span class="mood-dual-emoji">😔</span>
@@ -652,6 +671,13 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
               <input class="mood-dual-range mood-max" type="range" id="mood-vmax" min="0" max="100" value="100" oninput="updateMoodSlider()">
             </div>
             <span class="mood-dual-emoji">😄</span>
+          </div>
+          <div class="mood-pct-row">
+            <span class="mood-pct-lbl">mín</span>
+            <input class="mood-pct-inp" id="vmin-pct" type="number" min="0" max="100" value="0" onchange="setPctManual('vmin',this.value)">
+            <span class="mood-pct-sep">%&nbsp;—</span>
+            <input class="mood-pct-inp" id="vmax-pct" type="number" min="0" max="100" value="100" onchange="setPctManual('vmax',this.value)">
+            <span class="mood-pct-lbl">% máx</span>
           </div>
         </div>
 
@@ -693,7 +719,7 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
         <div class="live-dot" id="live-dot"></div>
         <span class="live-text" id="live-text">DJ Detenido</span>
         <div class="options-wrap">
-          <button class="btn-options" onclick="toggleOptionsMenu()" title="Opciones">⋮</button>
+          <button class="btn-options" onclick="toggleOptionsMenu(this)" title="Opciones">⋮</button>
           <div class="options-menu" id="options-menu">
             <button class="opt-item" onclick="vetoArtistToday()">🚫 No más este artista hoy</button>
             <button class="opt-item" onclick="vetoTrackToday()">🚫 No más esta canción hoy</button>
@@ -1145,13 +1171,25 @@ function applyPitchFillsFromState() {
   const emax = Math.round(S.moodSliders.energyMax * 100);
   const vmin = Math.round(S.moodSliders.valenceMin * 100);
   const vmax = Math.round(S.moodSliders.valenceMax * 100);
-  const ef = $('pitch-e-fill'); if (ef) { ef.style.left = emin + '%'; ef.style.width = (emax - emin) + '%'; }
-  const vf = $('pitch-v-fill'); if (vf) { vf.style.left = vmin + '%'; vf.style.width = (vmax - vmin) + '%'; }
-  const ev = $('pitch-e-vals'); if (ev) ev.textContent = `${(emin/100).toFixed(1)} – ${(emax/100).toFixed(1)}`;
-  const vv = $('pitch-v-vals'); if (vv) vv.textContent = `${(vmin/100).toFixed(1)} – ${(vmax/100).toFixed(1)}`;
-  // Also sync mood-energy-vals and mood-valence-vals if they exist (hidden section)
-  const mev = $('mood-energy-vals'); if (mev) mev.textContent = `${(emin/100).toFixed(1)} – ${(emax/100).toFixed(1)}`;
-  const mvv = $('mood-valence-vals'); if (mvv) mvv.textContent = `${(vmin/100).toFixed(1)} – ${(vmax/100).toFixed(1)}`;
+  // Fill from 0 → max (colorea hacia la derecha)
+  const ef = $('pitch-e-fill'); if (ef) { ef.style.left = '0%'; ef.style.width = emax + '%'; }
+  const vf = $('pitch-v-fill'); if (vf) { vf.style.left = '0%'; vf.style.width = vmax + '%'; }
+  // Sync manual % inputs
+  const ep1 = $('emin-pct'); if (ep1) ep1.value = emin;
+  const ep2 = $('emax-pct'); if (ep2) ep2.value = emax;
+  const vp1 = $('vmin-pct'); if (vp1) vp1.value = vmin;
+  const vp2 = $('vmax-pct'); if (vp2) vp2.value = vmax;
+  // Sync slider positions
+  const eminEl = $('mood-emin'); if (eminEl) eminEl.value = emin;
+  const emaxEl = $('mood-emax'); if (emaxEl) emaxEl.value = emax;
+  const vminEl = $('mood-vmin'); if (vminEl) vminEl.value = vmin;
+  const vmaxEl = $('mood-vmax'); if (vmaxEl) vmaxEl.value = vmax;
+}
+function setPctManual(which, rawVal) {
+  let v = Math.max(0, Math.min(100, parseInt(rawVal, 10) || 0));
+  const mapping = { emin: 'mood-emin', emax: 'mood-emax', vmin: 'mood-vmin', vmax: 'mood-vmax' };
+  const el = $(mapping[which]); if (el) { el.value = v; }
+  updateMoodSlider();
 }
 function resetMoodSliders() {
   ['mood-emin','mood-vmin'].forEach(id => $(id).value = 0);
@@ -1255,12 +1293,19 @@ function vetoTrackPermanent() {
   toast(`💀 "${S.currentTrack.name}" vetada permanentemente`, 'ok');
   nextTrack();
 }
-function toggleOptionsMenu() {
+function toggleOptionsMenu(btn) {
   const m = $('options-menu');
-  m.classList.toggle('open');
-  if (m.classList.contains('open')) {
-    setTimeout(() => document.addEventListener('click', closeOptionsOnOutside, { once: true }), 0);
+  const isOpen = m.classList.contains('open');
+  if (isOpen) { m.classList.remove('open'); return; }
+  // Position relative to the trigger button using fixed coords
+  const trigger = btn || document.querySelector('.btn-options');
+  if (trigger) {
+    const r = trigger.getBoundingClientRect();
+    m.style.top  = (r.bottom + 6) + 'px';
+    m.style.right = (window.innerWidth - r.right) + 'px';
   }
+  m.classList.add('open');
+  setTimeout(() => document.addEventListener('click', closeOptionsOnOutside, { once: true }), 0);
 }
 function closeOptionsMenu() { $('options-menu').classList.remove('open'); }
 function closeOptionsOnOutside(e) { if (!$('options-menu').contains(e.target)) closeOptionsMenu(); }
@@ -1334,21 +1379,23 @@ async function classifyUntaggedInBackground() {
         const raw = d?.content?.[0]?.text?.trim().replace(/^```json?\s*/i,'').replace(/\s*```$/,'') || '';
         const json = JSON.parse(raw);
         if (!json?.genero_sugerido || json.confianza === 'baja') return;
-        // Add as user label (AI-classified)
+        // AI genre goes to artistGenres (system), not userLabels — so it appears in system blocks
+        // and doesn't overwrite user-entered labels
         const label = json.genero_sugerido.toLowerCase();
-        if (!S.userLabels[a.id]) S.userLabels[a.id] = [];
-        if (!S.userLabels[a.id].includes(label)) {
-          S.userLabels[a.id].push(label);
+        if (!S.artistGenres[a.id]) S.artistGenres[a.id] = [];
+        if (!S.artistGenres[a.id].includes(label)) {
+          S.artistGenres[a.id].push(label);
+          // Merge into pool tracks WITHOUT removing existing user labels
+          S.trackPool.forEach(t => { if (t.artistId === a.id && !t.genres.includes(label)) t.genres.push(label); });
           // Add to allGenres if new
           if (!S.allGenres.includes(label)) { S.allGenres.push(label); S.activeGenres.add(label); }
-          // Update pool tracks for this artist
-          S.trackPool.forEach(t => { if (t.artistId === a.id && !t.genres.includes(label)) t.genres.push(label); });
         }
+        // Also preserve any existing user labels — they are already in S.userLabels, untouched
       } catch {}
     }));
     await sleep(800); // rate limit buffer
   }
-  saveUserLabels_store();
+  // No need to saveUserLabels_store — we only touched S.artistGenres (not persisted, reloaded from Spotify on next start)
   renderGenreGroups();
   updatePoolCount();
   console.log('[DJ Claudio] Clasificación IA de artistas sin etiqueta completa');
@@ -1419,22 +1466,44 @@ function renderLabelBlockList() {
   const el = $('label-block-list');
   if (!el) return;
   el.innerHTML = '';
-  S.customBlocks.forEach(b => {
+  if (!_labelCurrentTags.length) return;
+
+  // Build a unified list: custom blocks + system blocks that contain matching labels
+  const allBlocks = [
+    ...S.customBlocks.map(b => ({ ...b, _type: 'custom' })),
+    ...S.genreGroups.map(g => ({ ...g, _type: 'system' })),
+  ];
+
+  allBlocks.forEach(b => {
+    // Show system blocks that have at least 1 overlap with current tags, or all custom blocks
+    const overlap = _labelCurrentTags.filter(l => b.generos.includes(l));
+    if (b._type === 'system' && !overlap.length) return; // skip non-relevant system blocks
+
     const chip = document.createElement('span');
-    chip.style.cssText = 'font-family:"Space Mono",monospace;font-size:0.6rem;padding:0.2rem 0.55rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--surface2);color:var(--muted);user-select:none;transition:all 0.12s;display:inline-flex;align-items:center;gap:0.3rem';
-    chip.innerHTML = `${b.icon} ${b.nombre}`;
-    const labelsToAdd = _labelCurrentTags.filter(l => !b.generos.includes(l));
-    if (!labelsToAdd.length) {
+    const isSystem = b._type === 'system';
+    chip.style.cssText = `font-family:"Space Mono",monospace;font-size:0.6rem;padding:0.2rem 0.55rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--surface2);color:var(--muted);user-select:none;transition:all 0.12s;display:inline-flex;align-items:center;gap:0.3rem`;
+    const alreadyIn = _labelCurrentTags.every(l => b.generos.includes(l));
+    chip.innerHTML = `${b.icon || (isSystem ? '🎵' : '🟣')} ${b.nombre}`;
+    if (alreadyIn) {
       chip.style.borderColor = 'var(--accent)';
       chip.style.color = 'var(--accent)';
-      chip.title = 'Ya incluido';
+      chip.title = 'Etiquetas ya incluidas en este bloque';
     } else {
+      chip.title = `Agregar a "${b.nombre}"`;
       chip.onclick = () => {
-        labelsToAdd.forEach(l => { if (!b.generos.includes(l)) b.generos.push(l); });
-        saveCustomBlocks();
+        const toAdd = _labelCurrentTags.filter(l => !b.generos.includes(l));
+        if (isSystem) {
+          // For system blocks, add genres to their generos array in memory
+          // They'll show up in that block on next renderGenreGroups
+          toAdd.forEach(l => { b.generos.push(l); if (!S.allGenres.includes(l)) S.allGenres.push(l); S.activeGenres.add(l); });
+        } else {
+          // Custom block — persist
+          toAdd.forEach(l => { if (!b.generos.includes(l)) b.generos.push(l); });
+          saveCustomBlocks();
+        }
         renderGenreGroups();
         renderLabelBlockList();
-        toast(`Añadido a "${b.nombre}"`, 'ok', 2000);
+        toast(`Añadido a bloque "${b.nombre}"`, 'ok', 2000);
       };
     }
     el.appendChild(chip);
@@ -1450,10 +1519,12 @@ function openCreateBlockFromLabel() {
 function saveUserLabels() {
   if (!_labelTarget) return;
   const tid2 = trackId(_labelTarget.uri);
+  // Persist
   if (tid2) S.userLabelTracks[tid2] = [..._labelCurrentTags];
   if (_labelTarget.artistId) S.userLabels[_labelTarget.artistId] = [..._labelCurrentTags];
   saveUserLabels_store();
-  // Update pool track genres
+
+  // Update pool track genres for artist+track — MERGE, never overwrite system genres
   S.trackPool.forEach(t => {
     if ((tid2 && trackId(t.uri) === tid2) || t.artistId === _labelTarget.artistId) {
       const existing = t.genres || [];
@@ -1461,12 +1532,20 @@ function saveUserLabels() {
       t.genres = existing;
     }
   });
-  const newLabels = _labelCurrentTags.filter(lbl => !S.allGenres.includes(lbl));
-  newLabels.forEach(lbl => { S.allGenres.push(lbl); S.activeGenres.add(lbl); });
+
+  // Routing: labels that match existing allGenres → activate in their existing block
+  // Labels that are truly new → add to allGenres (they'll appear in "Mis Etiquetas")
+  _labelCurrentTags.forEach(lbl => {
+    if (!S.allGenres.includes(lbl)) {
+      S.allGenres.push(lbl);
+    }
+    S.activeGenres.add(lbl); // always activate
+  });
+
   renderGenreGroups();
   updatePoolCount();
   closeModal('modal-label');
-  toast('Etiquetas guardadas', 'ok');
+  toast('✅ Etiquetas guardadas', 'ok');
 }
 function offerBlockAssignment(labels) {
   const blockNames = S.customBlocks.map(b => b.nombre);
@@ -2108,13 +2187,19 @@ function renderGenreGroups() {
   // "Mis Likes" block always first
   container.appendChild(buildLikesBlock());
 
-  // "Mis Etiquetas" block (user-defined labels)
+  // "Mis Etiquetas" block — only labels that DON'T exist in any system block or custom block
+  // Labels that match system genres already appear in their natural block
   const allUserLabels = [...new Set([
     ...Object.values(S.userLabels).flat(),
     ...Object.values(S.userLabelTracks).flat(),
   ])];
-  if (allUserLabels.length) {
-    const grp = { id: 'grp-user-labels', nombre: 'Mis Etiquetas', icon: '✍️', generos: allUserLabels, _cls: 'user-labels-block' };
+  const systemGenreSet = new Set([
+    ...S.genreGroups.flatMap(g => g.generos),
+    ...S.customBlocks.flatMap(b => b.generos),
+  ]);
+  const trueNewLabels = allUserLabels.filter(l => !systemGenreSet.has(l));
+  if (trueNewLabels.length) {
+    const grp = { id: 'grp-user-labels', nombre: 'Mis Etiquetas', icon: '✍️', generos: trueNewLabels, _cls: 'user-labels-block', _isUserBlock: true };
     container.appendChild(buildGroupEl(grp));
   }
 
@@ -2210,8 +2295,10 @@ function buildGroupEl(grp) {
   tagsRow.style.display = 'none'; // collapsed by default; click header to expand
   grp.generos.forEach(g => {
     const tag = document.createElement('div');
-    tag.className = 'g-tag' + (S.activeGenres.has(g) ? ' on' : '');
-    tag.textContent = g;
+    // User-label blocks show genres in cyan
+    const isUserLabel = grp._isUserBlock;
+    tag.className = 'g-tag' + (isUserLabel ? ' user-label' : '') + (S.activeGenres.has(g) ? ' on' : '');
+    tag.textContent = isUserLabel ? '✏ ' + g : g;
     tag.id = `gtag-${CSS.escape(g)}`;
     tag.onclick = e => { e.stopPropagation(); toggleGenreTag(g, grp); };
     tagsRow.appendChild(tag);
@@ -2448,7 +2535,7 @@ async function startDJ() {
   if (!filteredPool().length) { toast('Sin tracks disponibles con los géneros seleccionados', 'err'); return; }
   S.djRunning = true; S.playHistory = []; S.upcoming = []; S.lastPreQueued = null;
   $('dj-btn').textContent = '■'; $('dj-btn').classList.add('stop');
-  const djLbl = $('dj-label'); if (djLbl) djLbl.textContent = 'DETENER DJ';
+  const djLbl = $('dj-label'); if (djLbl) { djLbl.textContent = 'DJ ACTIVO ●'; djLbl.classList.add('running'); }
   const recentN = recentPenaltyUris().size;
   const liveMsg = recentN > 0 ? `DJ Activo · Evitando ${recentN} tracks recientes` : 'DJ Activo — Cola infinita';
   $('live-dot').classList.add('on'); $('live-text').textContent = liveMsg;
@@ -2466,7 +2553,7 @@ function stopDJ() {
   S.djRunning = false;
   if (S.pollTimer) { clearInterval(S.pollTimer); S.pollTimer = null; }
   $('dj-btn').textContent = '▶'; $('dj-btn').classList.remove('stop');
-  const djLbl2 = $('dj-label'); if (djLbl2) djLbl2.textContent = 'INICIAR DJ';
+  const djLbl2 = $('dj-label'); if (djLbl2) { djLbl2.textContent = 'INICIAR DJ'; djLbl2.classList.remove('running'); }
   $('live-dot').classList.remove('on'); $('live-text').textContent = 'DJ Detenido';
   $('np-label').className = 'np-label'; $('np-label').textContent = 'AHORA SUENA';
 }
@@ -2773,20 +2860,27 @@ function renderNowPlaying(track, reason) {
   const art = $('album-art'), ph = $('album-ph');
   if (track.albumArt) { art.src = track.albumArt; art.style.display = ''; ph.style.display = 'none'; }
   else { art.style.display = 'none'; ph.style.display = ''; }
-  renderGenrePills($('track-pills'), track.genres || [], 4);
+  // Merge system genres with user labels; user labels shown distinctly
+  const tid2 = trackId(track.uri);
+  const userLabelsForTrack = getUserTrackLabels(track);
+  const allPills = [...new Set([...(track.genres || []), ...userLabelsForTrack])];
+  renderGenrePills($('track-pills'), allPills, 5, userLabelsForTrack);
   const reasonEl = $('selection-reason');
   if (reasonEl) reasonEl.innerHTML = reason || '';
   // Update document title
   document.title = `${track.name} · DJ CLAUDIO`;
 }
 
-function renderGenrePills(container, genres, maxCount) {
+function renderGenrePills(container, genres, maxCount, userLabels) {
   container.innerHTML = '';
+  const userSet = new Set(userLabels || []);
   genres.slice(0, maxCount).forEach(g => {
     const pill = document.createElement('span');
-    pill.className = 'tg-pill' + (S.activeGenres.has(g) ? '' : ' off');
-    pill.textContent = g;
-    pill.title = S.activeGenres.has(g) ? `Desactivar "${g}"` : `Activar "${g}"`;
+    const isUser = userSet.has(g);
+    const isActive = S.activeGenres.has(g);
+    pill.className = 'tg-pill' + (isUser ? ' user-label' : '') + (isActive ? '' : ' off');
+    pill.textContent = isUser ? '✏ ' + g : g;
+    pill.title = (isUser ? '[Tu etiqueta] ' : '') + (isActive ? `Desactivar "${g}"` : `Activar "${g}"`);
     pill.onclick = () => toggleGenrePill(g);
     container.appendChild(pill);
   });
