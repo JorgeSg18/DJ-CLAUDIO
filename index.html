@@ -204,8 +204,12 @@ input::placeholder { color: var(--muted); opacity: 0.6; }
 .abtn.liked { border-color: var(--red); color: var(--red); }
 
 /* Volume */
-.vol-row { display: flex; align-items: center; gap: 0.6rem; padding: 0 0.25rem; }
-.vol-icon { font-size: 0.85rem; color: var(--muted); }
+.vol-row { display: flex; align-items: center; gap: 0.5rem; padding: 0 0.25rem; }
+.vol-icon { font-size: 0.85rem; color: var(--muted); cursor: pointer; user-select: none; transition: color 0.15s; flex-shrink: 0; }
+.vol-icon:hover { color: var(--text); }
+.vol-pct { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--muted); min-width: 28px; text-align: right; cursor: pointer; flex-shrink: 0; }
+.vol-pct:hover { color: var(--text); }
+.vol-pct-input { font-family: 'Space Mono', monospace; font-size: 0.6rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; color: var(--text); width: 36px; padding: 0.1rem 0.2rem; text-align: center; outline: none; }
 input[type="range"] { flex: 1; -webkit-appearance: none; height: 3px; background: var(--surface2); border-radius: 2px; outline: none; cursor: pointer; }
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; background: var(--accent); border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
 input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
@@ -213,17 +217,111 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
 /* Queue */
 .queue-wrap { flex: 1; overflow-y: auto; padding: 0.9rem 1.4rem; }
 .queue-title { font-family: 'Space Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 0.75rem; }
-.q-item { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
-.q-num { padding-top: 0.15rem; }
-.q-art, .q-art-ph { margin-top: 0.05rem; }
+.q-item { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.55rem 0; border-bottom: 1px solid var(--border); position: relative; cursor: pointer; }
 .q-item:last-child { border-bottom: none; }
-.q-num { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--muted); min-width: 18px; text-align: right; }
+.q-item:hover .q-actions { opacity: 1; }
+.q-num { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--muted); min-width: 18px; text-align: right; padding-top: 0.15rem; flex-shrink: 0; }
+.q-art, .q-art-ph { margin-top: 0.05rem; }
 .q-art { width: 34px; height: 34px; border-radius: 5px; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
 .q-art-ph { width: 34px; height: 34px; border-radius: 5px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
 .q-info { flex: 1; min-width: 0; }
 .q-name { font-size: 0.78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .q-artist { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q-actions { display: flex; gap: 0.3rem; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; align-items: flex-start; padding-top: 0.05rem; }
+.q-action-btn { background: none; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-size: 0.6rem; padding: 0.15rem 0.35rem; cursor: pointer; transition: all 0.12s; }
+.q-action-btn:hover { border-color: var(--accent); color: var(--text); }
+.q-action-btn.remove:hover { border-color: var(--red); color: var(--red); }
 .q-empty { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--muted); padding: 1rem 0; line-height: 1.7; }
+
+/* ── USER LABELS & UNLABELED BLOCKS ── */
+.user-labels-block { border-color: rgba(34,211,238,0.3) !important; background: rgba(34,211,238,0.04) !important; }
+.user-labels-block .group-name { color: var(--cyan) !important; }
+.user-labels-block .gtoggle.on { background: #0891b2 !important; }
+.unlabeled-block .group-name { color: var(--muted); }
+.ai-badge { font-family: 'Space Mono', monospace; font-size: 0.52rem; padding: 0.1rem 0.35rem; border-radius: 3px; background: rgba(168,85,247,0.15); color: var(--accent); border: 1px solid rgba(168,85,247,0.2); margin-left: 0.3rem; }
+
+/* ── MOOD SLIDERS ── */
+.mood-section { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.mood-header { display: flex; align-items: center; gap: 0.55rem; padding: 0.55rem 0.85rem; cursor: pointer; user-select: none; }
+.mood-header:hover { background: rgba(255,255,255,0.025); }
+.mood-body { padding: 0.5rem 0.85rem 0.85rem; display: flex; flex-direction: column; gap: 0.85rem; border-top: 1px solid var(--border); }
+.mood-row { display: flex; flex-direction: column; gap: 0.3rem; }
+.mood-row-hdr { display: flex; justify-content: space-between; }
+.mood-label { font-family: 'Space Mono', monospace; font-size: 0.62rem; color: var(--muted); }
+.mood-vals { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--accent); }
+.mood-slider-wrap { display: flex; align-items: center; gap: 0.5rem; }
+.mood-emoji { font-size: 0.8rem; }
+.mood-track { flex: 1; position: relative; height: 20px; display: flex; align-items: center; }
+.mood-range { position: absolute; width: 100%; -webkit-appearance: none; height: 3px; background: transparent; outline: none; cursor: pointer; pointer-events: auto; }
+.mood-range::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; cursor: pointer; }
+.mood-range.mood-min::-webkit-slider-thumb { background: var(--accent); }
+.mood-range.mood-max::-webkit-slider-thumb { background: var(--cyan); }
+.mood-track-fill { position: absolute; height: 3px; background: var(--border); width: 100%; border-radius: 2px; pointer-events: none; }
+.mood-track-range { position: absolute; height: 3px; background: linear-gradient(90deg, var(--accent), var(--cyan)); border-radius: 2px; pointer-events: none; }
+
+/* ── SELECTION REASON ── */
+.selection-reason { font-family: 'Space Mono', monospace; font-size: 0.58rem; color: var(--muted); margin-bottom: 0.75rem; min-height: 0.8rem; line-height: 1.4; }
+.selection-reason em { color: var(--accent); font-style: normal; }
+
+/* ── OPTIONS MENU ── */
+.btn-options { background: none; border: none; color: var(--muted); font-size: 1rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; transition: all 0.15s; }
+.btn-options:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+.options-menu { position: absolute; right: 0; top: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 0.4rem; z-index: 800; min-width: 210px; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.5); margin-top: 4px; }
+.options-menu.open { display: flex; flex-direction: column; }
+.options-wrap { position: relative; }
+.opt-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.75rem; border-radius: 7px; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--text); transition: background 0.15s; background: none; border: none; width: 100%; text-align: left; }
+.opt-item:hover { background: rgba(255,255,255,0.06); }
+.opt-item.danger:hover { background: rgba(248,113,113,0.12); color: var(--red); }
+.opt-divider { height: 1px; background: var(--border); margin: 0.3rem 0; }
+
+/* ── SEARCH MODAL ── */
+.search-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.65rem 1rem; color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.82rem; outline: none; transition: border-color 0.2s; margin-bottom: 1rem; }
+.search-input:focus { border-color: var(--accent); }
+.search-result { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+.search-result:hover { background: var(--surface2); }
+.search-art { width: 42px; height: 42px; border-radius: 5px; object-fit: cover; background: var(--surface2); flex-shrink: 0; }
+.search-name { font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.search-meta { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--muted); display: flex; justify-content: space-between; }
+.search-analysis { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
+.analysis-match { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.75rem; color: var(--accent); }
+.feature-bars { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem; }
+.feature-bar-row { display: flex; align-items: center; gap: 0.5rem; }
+.feature-bar-label { font-family: 'Space Mono', monospace; font-size: 0.55rem; color: var(--muted); min-width: 80px; }
+.feature-bar-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; }
+.feature-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+.feature-bar-val { font-family: 'Space Mono', monospace; font-size: 0.52rem; color: var(--muted); min-width: 28px; text-align: right; }
+.search-actions { display: flex; gap: 0.5rem; }
+.search-action-btn { flex: 1; padding: 0.65rem; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.7rem; cursor: pointer; transition: all 0.15s; }
+.search-action-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+.search-action-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.search-action-btn.primary:hover { background: #9333ea; }
+
+/* ── VETOES ── */
+.veto-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: var(--surface2); margin-bottom: 0.4rem; }
+.veto-item-info { flex: 1; min-width: 0; }
+.veto-item-name { font-size: 0.78rem; font-weight: 600; }
+.veto-item-detail { font-family: 'Space Mono', monospace; font-size: 0.58rem; color: var(--muted); }
+.veto-rm { background: none; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-size: 0.65rem; padding: 0.15rem 0.45rem; cursor: pointer; transition: all 0.12s; }
+.veto-rm:hover { border-color: var(--red); color: var(--red); }
+
+/* ── USER LABEL MODAL ── */
+.label-tag-wrap { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; min-height: 2rem; }
+.label-tag { font-family: 'Space Mono', monospace; font-size: 0.65rem; padding: 0.25rem 0.55rem; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-dim); color: var(--text); display: inline-flex; align-items: center; gap: 0.3rem; }
+.label-tag-x { cursor: pointer; opacity: 0.6; }
+.label-tag-x:hover { opacity: 1; }
+.label-input-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.label-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.85rem; color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.8rem; outline: none; }
+.label-input:focus { border-color: var(--accent); }
+.label-add-btn { padding: 0.55rem 0.85rem; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-size: 0.8rem; cursor: pointer; }
+.modal-save-btn { width: 100%; padding: 0.65rem; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-family: 'Space Mono', monospace; font-size: 0.72rem; cursor: pointer; margin-bottom: 0.5rem; }
+
+/* ── HEADER SEARCH BTN ── */
+.btn-hdr-search { font-family: 'Space Mono', monospace; font-size: 0.65rem; padding: 0.3rem 0.7rem; border: 1px solid var(--border); border-radius: 6px; background: none; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+.btn-hdr-search:hover { border-color: var(--cyan); color: var(--cyan); }
+
+/* ── TRACK LABEL BTN ── */
+.btn-label-track { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.75rem; padding: 0.1rem; line-height: 1; flex-shrink: 0; transition: color 0.15s; }
+.btn-label-track:hover { color: var(--cyan); }
 
 /* ── MODALS ── */
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 9998; padding: 1rem; }
@@ -306,6 +404,8 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
   <header class="app-header">
     <div class="hdr-logo">DJ<em>·</em>CLAUDIO</div>
     <div class="hdr-right">
+      <button class="btn-hdr-search" onclick="openSearch()">🔍 Buscar</button>
+      <button class="btn-sm" onclick="renderVetoList();openModal('modal-vetoes')">🚫 Vetos</button>
       <img class="hdr-avatar" id="hdr-avatar" src="" alt="" style="display:none">
       <span class="hdr-name" id="hdr-name"></span>
       <button class="btn-sm" onclick="logout()">Salir</button>
@@ -324,6 +424,54 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
         </div>
         <div class="genre-groups" id="genre-groups">
           <span class="genre-empty">Analizando géneros...</span>
+        </div>
+      </section>
+
+      <section>
+        <div class="mood-section">
+          <div class="mood-header" onclick="toggleMoodPanel()">
+            <span class="group-icon">🎚️</span>
+            <span class="group-name" style="font-size:0.76rem;font-weight:600">Control de Mood</span>
+            <span class="group-count" id="mood-summary">Energía · Vibra</span>
+          </div>
+          <div class="mood-body" id="mood-body" style="display:none">
+            <div class="mood-row">
+              <div class="mood-row-hdr">
+                <span class="mood-label">⚡ Energía</span>
+                <span class="mood-vals" id="mood-energy-vals">0.0 – 1.0</span>
+              </div>
+              <div class="mood-slider-wrap">
+                <span class="mood-emoji">😴</span>
+                <div class="mood-track">
+                  <div class="mood-track-fill"></div>
+                  <div class="mood-track-range" id="mood-energy-range"></div>
+                  <input type="range" class="mood-range mood-min" id="mood-emin" min="0" max="100" value="0" oninput="updateMoodSlider()">
+                  <input type="range" class="mood-range mood-max" id="mood-emax" min="0" max="100" value="100" oninput="updateMoodSlider()">
+                </div>
+                <span class="mood-emoji">⚡</span>
+              </div>
+            </div>
+            <div class="mood-row">
+              <div class="mood-row-hdr">
+                <span class="mood-label">😄 Vibra</span>
+                <span class="mood-vals" id="mood-valence-vals">0.0 – 1.0</span>
+              </div>
+              <div class="mood-slider-wrap">
+                <span class="mood-emoji">😔</span>
+                <div class="mood-track">
+                  <div class="mood-track-fill"></div>
+                  <div class="mood-track-range" id="mood-valence-range"></div>
+                  <input type="range" class="mood-range mood-min" id="mood-vmin" min="0" max="100" value="0" oninput="updateMoodSlider()">
+                  <input type="range" class="mood-range mood-max" id="mood-vmax" min="0" max="100" value="100" oninput="updateMoodSlider()">
+                </div>
+                <span class="mood-emoji">😄</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:0.5rem">
+              <button class="btn-genre-ctrl" onclick="resetMoodSliders()">Resetear</button>
+              <span style="font-family:'Space Mono',monospace;font-size:0.58rem;color:var(--muted);align-self:center">Rango más estrecho = mood más fiel</span>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -364,6 +512,15 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
       <div class="dj-live-bar">
         <div class="live-dot" id="live-dot"></div>
         <span class="live-text" id="live-text">DJ Detenido</span>
+        <div class="options-wrap">
+          <button class="btn-options" onclick="toggleOptionsMenu()" title="Opciones">⋮</button>
+          <div class="options-menu" id="options-menu">
+            <button class="opt-item" onclick="vetoArtistToday()">🚫 No más este artista hoy</button>
+            <button class="opt-item" onclick="vetoTrackToday()">🚫 No más esta canción hoy</button>
+            <div class="opt-divider"></div>
+            <button class="opt-item danger" onclick="vetoTrackPermanent()">💀 Nunca más esta canción</button>
+          </div>
+        </div>
       </div>
 
       <div class="now-playing">
@@ -376,10 +533,12 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
 
         <div class="track-hdr">
           <div class="track-name" id="track-name">—</div>
+          <button class="btn-label-track" id="btn-label-track" onclick="openLabelModal()" title="Etiquetar">✏️</button>
           <button class="like-btn" id="btn-like" onclick="toggleLike()" title="Like">♡</button>
         </div>
         <div class="track-artist" id="track-artist">Selecciona un modo y pulsa Iniciar DJ</div>
         <div class="track-genre-pills" id="track-pills"></div>
+        <div class="selection-reason" id="selection-reason"></div>
 
         <div class="progress-row">
           <div class="progress-track" id="prog-track" onclick="seekClick(event)">
@@ -406,9 +565,9 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
         </div>
 
         <div class="vol-row">
-          <span class="vol-icon">🔈</span>
+          <span class="vol-icon" id="vol-icon" onclick="toggleMute()" title="Silenciar/Activar">🔉</span>
           <input type="range" id="vol-slider" min="0" max="100" value="80" oninput="setVol(this.value)">
-          <span class="vol-icon">🔊</span>
+          <span class="vol-pct" id="vol-pct" onclick="editVolPct()" title="Editar volumen">80%</span>
         </div>
       </div>
 
@@ -454,6 +613,45 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
   </div>
 </div>
 
+<!-- SEARCH MODAL -->
+<div class="modal" id="modal-search">
+  <div class="modal-card" style="max-width:460px">
+    <div class="modal-title">🔍 Buscar canción</div>
+    <input class="search-input" id="search-input" type="text" placeholder="Artista, canción, álbum..." oninput="onSearchInput()" autocomplete="off">
+    <div id="search-results"></div>
+    <div id="search-analysis" style="display:none"></div>
+    <div id="search-actions" style="display:none" class="search-actions">
+      <button class="search-action-btn primary" onclick="playSearchResult()">▶ Reproducir ahora</button>
+      <button class="search-action-btn" onclick="queueSearchResult()">➕ Añadir a cola</button>
+    </div>
+    <button class="modal-close" onclick="closeModal('modal-search')">Cerrar</button>
+  </div>
+</div>
+
+<!-- VETOES MODAL -->
+<div class="modal" id="modal-vetoes">
+  <div class="modal-card">
+    <div class="modal-title">🚫 Vetos activos</div>
+    <div id="veto-list"><div class="q-empty">No hay vetos activos.</div></div>
+    <button class="modal-close" onclick="closeModal('modal-vetoes')">Cerrar</button>
+  </div>
+</div>
+
+<!-- USER LABEL MODAL -->
+<div class="modal" id="modal-label">
+  <div class="modal-card">
+    <div class="modal-title">✏️ Mis Etiquetas</div>
+    <div style="font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--muted);margin-bottom:0.75rem" id="label-track-name">—</div>
+    <div class="label-tag-wrap" id="label-tags"></div>
+    <div class="label-input-row">
+      <input class="label-input" id="label-input" type="text" placeholder="Nueva etiqueta..." onkeydown="if(event.key==='Enter')addLabelTag()">
+      <button class="label-add-btn" onclick="addLabelTag()">+</button>
+    </div>
+    <button class="modal-save-btn" onclick="saveUserLabels()">Guardar etiquetas</button>
+    <button class="modal-close" onclick="closeModal('modal-label')">Cancelar</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 <script>
@@ -471,20 +669,47 @@ if (window.Spotify) _sdkResolve();
 const S = {
   token: null, clientId: null, lastfmKey: null, anthropicKey: null,
   user: null, topArtists: [], topTracks: [], recentTracks: [],
-  artistGenres: {},    // artistId → [genres]
+  topTracksLong: [],    // long-term top tracks for history boost
+  topArtistRank: {},    // artistId → rank (lower = more historical)
+  artistGenres: {},     // artistId → [genres]
   allGenres: [],
   activeGenres: new Set(),
-  genreGroups: [],     // [{id, nombre, icon, generos, active?}]
-  trackPool: [],       // [{uri,name,artist,artistId,albumArt,genres,duration,popularity}]
+  genreGroups: [],      // [{id, nombre, icon, generos}]
+  trackPool: [],        // [{uri,name,artist,artistId,albumArt,genres,duration,popularity}]
+
+  // Audio features cache
+  audioFeatures: {},    // trackId → {energy,valence,danceability,tempo,acousticness,instrumentalness}
+
+  // Mood sliders
+  moodSliders: { energyMin: 0, energyMax: 1, valenceMin: 0, valenceMax: 1 },
 
   // Likes block
   likesBlock: { active: false, genres: new Set(), trackIds: new Set() },
+
+  // User labels ("Mis Etiquetas")
+  userLabels: {},       // artistId → [string]
+  userLabelTracks: {},  // trackId → [string] (track-level labels)
+
+  // Vetoes
+  vetoes: [],           // [{id, type:'track'|'artist', until:timestamp|null, permanent:boolean, name:string}]
 
   // Player
   player: null, deviceId: null,
   djRunning: false, mode: 'mix', shuffle: true, repeat: 'off',
   playHistory: [], upcoming: [], lastPreQueued: null,
+  playHistoryFull: [],  // up to 1000 entries, persisted
   pollTimer: null, lastShownUri: null,
+
+  // Coherence tracking
+  recentFamilies: [],   // last 3 genre families played
+  selectionReason: '',
+
+  // Search
+  _searchResult: null,  // currently selected search track
+  _searchDebounce: null,
+
+  // Volume
+  _prevVol: 80, _volMuted: false,
 
   // Current track & like state
   currentTrack: null, isLiked: false,
@@ -495,6 +720,9 @@ const S = {
 
   // Playlists
   userPlaylists: [],
+
+  // Session
+  sessionId: null,
 };
 
 // ══════════════════════════════════════════════════════════
@@ -559,6 +787,497 @@ function recordFeedback(type, track) {
     });
   }
   saveFeedback();
+}
+
+// ══════════════════════════════════════════════════════════
+//  GENRE FAMILIES & MOOD COHERENCE
+// ══════════════════════════════════════════════════════════
+const GENRE_FAMILIES = [
+  { id: 'urbano',     keys: ['reggaeton','trap latino','latin trap','dembow','urbano','perreo','bachata','salsa','cumbia','reggae en espanol','moombahton'] },
+  { id: 'rap',        keys: ['rap','hip hop','hip-hop','hip hop latino','spanish rap','underground rap','trap','drill','boom bap','crunk','grime'] },
+  { id: 'electronica',keys: ['electronic','house','techno','idm','drum and bass','edm','electro','synthwave','trance','dubstep','ambient electronica','garage','dnb'] },
+  { id: 'ambient',    keys: ['ambient','chillout','downtempo','instrumental','easy listening','lo-fi','lofi','new age','meditation','sleep','study','chill'] },
+  { id: 'rock',       keys: ['rock','punk','hardcore','metal','alternative','grunge','indie rock','post-rock','emo','shoegaze','prog','indie'] },
+  { id: 'regional',   keys: ['corrido','corridos tumbados','corrido tumbado','mexican','regional mexican','banda','norteno','norteño','grupero','sierreno','cumbia'] },
+  { id: 'pop',        keys: ['pop','latin pop','indie pop','synth-pop','dance pop','electropop','k-pop','teen pop','dream pop','europop'] },
+];
+const FAMILY_OPPOSITES = {
+  ambient:    new Set(['rap','rock','urbano']),
+  rap:        new Set(['ambient']),
+  rock:       new Set(['ambient']),
+  regional:   new Set(['electronica','ambient']),
+};
+function getGenreFamily(genre) {
+  const gl = genre.toLowerCase();
+  for (const f of GENRE_FAMILIES) if (f.keys.some(k => gl === k || gl.includes(k) || k.includes(gl))) return f.id;
+  return 'other';
+}
+function getTrackFamilies(track) {
+  const fams = new Set((track.genres || []).map(getGenreFamily).filter(f => f !== 'other'));
+  return fams;
+}
+function pickCoherent(pool) {
+  if (!pool.length) return null;
+  const curAf = S.currentTrack ? (S.audioFeatures[trackId(S.currentTrack.uri)] || null) : null;
+  const curFams = S.currentTrack ? getTrackFamilies(S.currentTrack) : new Set();
+  const broadSelection = S.allGenres.length > 0 && S.activeGenres.size > S.allGenres.length * 0.65;
+
+  const scored = pool.map(t => {
+    let bonus = 1;
+    const tFams = getTrackFamilies(t);
+    if (!broadSelection && curFams.size > 0) {
+      const shared = [...tFams].filter(f => curFams.has(f)).length;
+      if (shared > 0) bonus *= 2.5;
+      else {
+        const clash = [...curFams].some(cf => [...(FAMILY_OPPOSITES[cf] || [])].some(of => tFams.has(of)));
+        if (clash) bonus *= 0.04;
+      }
+    }
+    if (curAf) {
+      const taf = S.audioFeatures[trackId(t.uri)];
+      if (taf) {
+        const ed = Math.abs(taf.energy - curAf.energy);
+        if (ed > 0.35) bonus *= Math.max(0.1, 1 - (ed - 0.35) * 2.5);
+        if (taf.energy  < S.moodSliders.energyMin  || taf.energy  > S.moodSliders.energyMax)  bonus *= 0.1;
+        if (taf.valence < S.moodSliders.valenceMin || taf.valence > S.moodSliders.valenceMax) bonus *= 0.1;
+      }
+    }
+    // Historical top artist boost (Part 8)
+    const rank = S.topArtistRank[t.artistId];
+    if (rank !== undefined) bonus *= 1 + (50 - Math.min(rank, 49)) / 100;
+    return { t, score: trackScore(t) * bonus };
+  });
+
+  const total = scored.reduce((s, i) => s + i.score, 0);
+  if (total <= 0) return pool[rand(pool.length)];
+  let r = Math.random() * total;
+  for (const { t, score } of scored) { r -= score; if (r <= 0) return t; }
+  return scored[scored.length - 1].t;
+}
+function buildSelectionReason(track) {
+  if (!track || !S.currentTrack || track.uri === S.currentTrack.uri) return '';
+  const curFams = getTrackFamilies(S.currentTrack);
+  const tFams   = getTrackFamilies(track);
+  const shared  = [...tFams].filter(f => curFams.has(f));
+  const activeGs = (track.genres || []).filter(g => S.activeGenres.has(g));
+  if (shared.length) {
+    const fam = GENRE_FAMILIES.find(f => f.id === shared[0]);
+    return `Seleccionada por: <em>${fam?.id || shared[0]}</em> · Compatible con el mood actual`;
+  }
+  if (activeGs.length) return `Seleccionada por: <em>${activeGs[0]}</em>`;
+  return 'Seleccionada · sin etiqueta activa';
+}
+
+// ══════════════════════════════════════════════════════════
+//  AUDIO FEATURES
+// ══════════════════════════════════════════════════════════
+async function getAudioFeatures(tid) {
+  if (!tid) return null;
+  if (S.audioFeatures[tid]) return S.audioFeatures[tid];
+  try {
+    const cached = JSON.parse(localStorage.getItem('af_' + tid) || 'null');
+    if (cached) { S.audioFeatures[tid] = cached; return cached; }
+  } catch {}
+  const data = await api('/audio-features/' + tid).catch(() => null);
+  if (!data || data.energy === undefined) return null;
+  const af = { energy: data.energy ?? 0.5, valence: data.valence ?? 0.5, danceability: data.danceability ?? 0.5, tempo: data.tempo ?? 120, acousticness: data.acousticness ?? 0.5, instrumentalness: data.instrumentalness ?? 0 };
+  S.audioFeatures[tid] = af;
+  try { localStorage.setItem('af_' + tid, JSON.stringify(af)); } catch {}
+  return af;
+}
+
+// ══════════════════════════════════════════════════════════
+//  MOOD SLIDERS
+// ══════════════════════════════════════════════════════════
+function toggleMoodPanel() {
+  const b = $('mood-body');
+  b.style.display = b.style.display === 'none' ? '' : 'none';
+}
+function updateMoodSlider() {
+  let emin = parseInt($('mood-emin').value), emax = parseInt($('mood-emax').value);
+  let vmin = parseInt($('mood-vmin').value), vmax = parseInt($('mood-vmax').value);
+  if (emin > emax) { const t = emin; emin = emax; emax = t; }
+  if (vmin > vmax) { const t = vmin; vmin = vmax; vmax = t; }
+  S.moodSliders.energyMin  = emin / 100; S.moodSliders.energyMax  = emax / 100;
+  S.moodSliders.valenceMin = vmin / 100; S.moodSliders.valenceMax = vmax / 100;
+  $('mood-energy-vals').textContent  = `${(emin/100).toFixed(1)} – ${(emax/100).toFixed(1)}`;
+  $('mood-valence-vals').textContent = `${(vmin/100).toFixed(1)} – ${(vmax/100).toFixed(1)}`;
+  const er = $('mood-energy-range'), vr = $('mood-valence-range');
+  if (er) { er.style.left = emin + '%'; er.style.width = (emax - emin) + '%'; }
+  if (vr) { vr.style.left = vmin + '%'; vr.style.width = (vmax - vmin) + '%'; }
+  updatePoolCount();
+  saveSessionConfig();
+}
+function resetMoodSliders() {
+  ['mood-emin','mood-vmin'].forEach(id => $(id).value = 0);
+  ['mood-emax','mood-vmax'].forEach(id => $(id).value = 100);
+  updateMoodSlider();
+}
+function applyMoodSlidersFromState() {
+  $('mood-emin').value = Math.round(S.moodSliders.energyMin * 100);
+  $('mood-emax').value = Math.round(S.moodSliders.energyMax * 100);
+  $('mood-vmin').value = Math.round(S.moodSliders.valenceMin * 100);
+  $('mood-vmax').value = Math.round(S.moodSliders.valenceMax * 100);
+  updateMoodSlider();
+}
+
+// ══════════════════════════════════════════════════════════
+//  SESSION CONFIG PERSISTENCE (Part 4)
+// ══════════════════════════════════════════════════════════
+function saveSessionConfig() {
+  try {
+    localStorage.setItem('dj_session_config', JSON.stringify({
+      activeGenres: [...S.activeGenres],
+      moodSliders: S.moodSliders,
+      savedAt: Date.now(),
+    }));
+  } catch {}
+}
+function restoreSessionConfig() {
+  try {
+    const d = JSON.parse(localStorage.getItem('dj_session_config') || 'null');
+    if (!d) return false;
+    if (d.activeGenres?.length) S.activeGenres = new Set(d.activeGenres);
+    if (d.moodSliders) Object.assign(S.moodSliders, d.moodSliders);
+    return true;
+  } catch { return false; }
+}
+function loadPlayHistoryFull() {
+  try { S.playHistoryFull = JSON.parse(localStorage.getItem('dj_history_full') || '[]'); } catch { S.playHistoryFull = []; }
+}
+function savePlayHistoryFull() {
+  try { localStorage.setItem('dj_history_full', JSON.stringify(S.playHistoryFull.slice(-1000))); } catch {}
+}
+function addToFullHistory(track, completed) {
+  S.playHistoryFull.push({
+    trackId: trackId(track.uri), trackName: track.name,
+    artistId: track.artistId, artistName: track.artist,
+    genres: track.genres || [], energy: S.audioFeatures[trackId(track.uri)]?.energy,
+    playedAt: Date.now(), completed, liked: S.feedback.likedUris.has(track.uri),
+    sessionId: S.sessionId,
+  });
+  savePlayHistoryFull();
+}
+function recentPenaltyUris() {
+  const cutoff = Date.now() - 72 * 3600 * 1000;
+  return new Set(S.playHistoryFull.filter(e => e.playedAt > cutoff).map(e => 'spotify:track:' + e.trackId));
+}
+
+// ══════════════════════════════════════════════════════════
+//  VETOES (Part 5)
+// ══════════════════════════════════════════════════════════
+function loadVetoes() {
+  try { S.vetoes = JSON.parse(localStorage.getItem('dj_vetoes') || '[]'); } catch { S.vetoes = []; }
+  // Purge expired temporary vetoes
+  S.vetoes = S.vetoes.filter(v => v.permanent || !v.until || v.until > Date.now());
+  saveVetoes();
+}
+function saveVetoes() { try { localStorage.setItem('dj_vetoes', JSON.stringify(S.vetoes)); } catch {} }
+function addVeto(type, id, name, hours, permanent) {
+  S.vetoes = S.vetoes.filter(v => !(v.type === type && v.id === id));
+  S.vetoes.push({ id, type, name, permanent: !!permanent, until: permanent ? null : Date.now() + hours * 3600000 });
+  saveVetoes();
+  renderVetoList();
+}
+function removeVeto(idx) { S.vetoes.splice(idx, 1); saveVetoes(); renderVetoList(); }
+function isVetoed(track) {
+  const now = Date.now();
+  return S.vetoes.some(v => {
+    if (!v.permanent && v.until && v.until < now) return false;
+    if (v.type === 'track'  && trackId(track.uri) === v.id)  return true;
+    if (v.type === 'artist' && track.artistId === v.id)       return true;
+    return false;
+  });
+}
+function vetoArtistToday() {
+  closeOptionsMenu();
+  if (!S.currentTrack) return;
+  addVeto('artist', S.currentTrack.artistId, S.currentTrack.artist, 8, false);
+  toast(`🚫 ${S.currentTrack.artist} vetado por 8 h`, 'ok');
+  nextTrack();
+}
+function vetoTrackToday() {
+  closeOptionsMenu();
+  if (!S.currentTrack) return;
+  addVeto('track', trackId(S.currentTrack.uri), S.currentTrack.name, 8, false);
+  toast(`🚫 "${S.currentTrack.name}" vetada por 8 h`, 'ok');
+  nextTrack();
+}
+function vetoTrackPermanent() {
+  closeOptionsMenu();
+  if (!S.currentTrack) return;
+  addVeto('track', trackId(S.currentTrack.uri), S.currentTrack.name, 0, true);
+  toast(`💀 "${S.currentTrack.name}" vetada permanentemente`, 'ok');
+  nextTrack();
+}
+function toggleOptionsMenu() {
+  const m = $('options-menu');
+  m.classList.toggle('open');
+  if (m.classList.contains('open')) {
+    setTimeout(() => document.addEventListener('click', closeOptionsOnOutside, { once: true }), 0);
+  }
+}
+function closeOptionsMenu() { $('options-menu').classList.remove('open'); }
+function closeOptionsOnOutside(e) { if (!$('options-menu').contains(e.target)) closeOptionsMenu(); }
+function renderVetoList() {
+  const el = $('veto-list');
+  if (!el) return;
+  const now = Date.now();
+  const active = S.vetoes.filter(v => v.permanent || !v.until || v.until > now);
+  if (!active.length) { el.innerHTML = '<div class="q-empty">No hay vetos activos.</div>'; return; }
+  el.innerHTML = '';
+  active.forEach((v, i) => {
+    const left = v.permanent ? 'Permanente' : `${Math.ceil((v.until - now) / 3600000)} h restantes`;
+    const div = document.createElement('div');
+    div.className = 'veto-item';
+    div.innerHTML = `<div class="veto-item-info"><div class="veto-item-name">${v.name}</div><div class="veto-item-detail">${v.type === 'artist' ? 'Artista' : 'Canción'} · ${left}</div></div><button class="veto-rm" onclick="removeVeto(${i});renderVetoList()">✕</button>`;
+    el.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  USER LABELS (Part 3 – Mis Etiquetas)
+// ══════════════════════════════════════════════════════════
+function loadUserLabels() {
+  try {
+    const d = JSON.parse(localStorage.getItem('dj_user_labels') || '{}');
+    S.userLabels = d.artists || {};
+    S.userLabelTracks = d.tracks || {};
+  } catch {}
+}
+function saveUserLabels_store() {
+  try { localStorage.setItem('dj_user_labels', JSON.stringify({ artists: S.userLabels, tracks: S.userLabelTracks })); } catch {}
+}
+function getUserTrackLabels(track) {
+  const tid2 = trackId(track?.uri);
+  const trackLbls = tid2 ? (S.userLabelTracks[tid2] || []) : [];
+  const artistLbls = track?.artistId ? (S.userLabels[track.artistId] || []) : [];
+  return [...new Set([...trackLbls, ...artistLbls])];
+}
+
+// Open label modal pre-filled for a specific artist (Sin Etiqueta block)
+function openLabelForArtist(artistId, artistName) {
+  _labelTarget = { uri: null, artistId, artist: artistName, name: artistName, genres: [] };
+  _labelCurrentTags = [...(S.userLabels[artistId] || [])];
+  $('label-track-name').textContent = `Artista: ${artistName}`;
+  renderLabelTags();
+  openModal('modal-label');
+}
+
+// ── Part 3, Capa 1: Background AI auto-classification for untagged artists ──
+async function classifyUntaggedInBackground() {
+  if (!S.anthropicKey) return;
+  const untagged = S.topArtists.filter(a => !S.artistGenres[a.id]?.length && !(S.userLabels[a.id]?.length));
+  if (!untagged.length) return;
+  // Process in batches of 3 to avoid rate limits
+  for (let i = 0; i < Math.min(untagged.length, 9); i += 3) {
+    const batch = untagged.slice(i, i + 3);
+    await Promise.all(batch.map(async a => {
+      // Get a representative track's audio features for context
+      const repTrack = S.trackPool.find(t => t.artistId === a.id);
+      const af = repTrack ? S.audioFeatures[trackId(repTrack.uri)] : null;
+      try {
+        const prompt = `Artista: "${a.name}". ${af ? `Características: energy=${af.energy.toFixed(2)}, valence=${af.valence.toFixed(2)}, danceability=${af.danceability.toFixed(2)}, tempo=${Math.round(af.tempo)}, acousticness=${af.acousticness.toFixed(2)}.` : ''} Géneros del usuario: ${S.allGenres.slice(0,15).join(', ')}. ¿En qué familia encaja? JSON sin markdown: {"genero_sugerido":"string","familia_sugerida":"string","confianza":"alta|media|baja"}`;
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': S.anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 80, messages: [{ role: 'user', content: prompt }] }),
+        });
+        if (!r.ok) return;
+        const d = await r.json();
+        const raw = d?.content?.[0]?.text?.trim().replace(/^```json?\s*/i,'').replace(/\s*```$/,'') || '';
+        const json = JSON.parse(raw);
+        if (!json?.genero_sugerido || json.confianza === 'baja') return;
+        // Add as user label (AI-classified)
+        const label = json.genero_sugerido.toLowerCase();
+        if (!S.userLabels[a.id]) S.userLabels[a.id] = [];
+        if (!S.userLabels[a.id].includes(label)) {
+          S.userLabels[a.id].push(label);
+          // Add to allGenres if new
+          if (!S.allGenres.includes(label)) { S.allGenres.push(label); S.activeGenres.add(label); }
+          // Update pool tracks for this artist
+          S.trackPool.forEach(t => { if (t.artistId === a.id && !t.genres.includes(label)) t.genres.push(label); });
+        }
+      } catch {}
+    }));
+    await sleep(800); // rate limit buffer
+  }
+  saveUserLabels_store();
+  renderGenreGroups();
+  updatePoolCount();
+  console.log('[DJ Claudio] Clasificación IA de artistas sin etiqueta completa');
+}
+
+let _labelTarget = null;
+let _labelCurrentTags = [];
+function openLabelModal() {
+  if (!S.currentTrack) return;
+  _labelTarget = S.currentTrack;
+  _labelCurrentTags = [...getUserTrackLabels(S.currentTrack)];
+  $('label-track-name').textContent = `${S.currentTrack.name} — ${S.currentTrack.artist}`;
+  renderLabelTags();
+  openModal('modal-label');
+}
+function renderLabelTags() {
+  const wrap = $('label-tags');
+  wrap.innerHTML = '';
+  _labelCurrentTags.forEach((tag, i) => {
+    const span = document.createElement('span');
+    span.className = 'label-tag';
+    span.innerHTML = `${tag}<span class="label-tag-x" onclick="removeLabelTag(${i})">✕</span>`;
+    wrap.appendChild(span);
+  });
+}
+function removeLabelTag(i) { _labelCurrentTags.splice(i, 1); renderLabelTags(); }
+function addLabelTag() {
+  const inp = $('label-input');
+  const val = inp.value.trim().toLowerCase();
+  if (!val || _labelCurrentTags.includes(val)) { inp.value = ''; return; }
+  _labelCurrentTags.push(val);
+  inp.value = '';
+  renderLabelTags();
+}
+function saveUserLabels() {
+  if (!_labelTarget) return;
+  const tid2 = trackId(_labelTarget.uri);
+  if (tid2) S.userLabelTracks[tid2] = [..._labelCurrentTags];
+  if (_labelTarget.artistId) S.userLabels[_labelTarget.artistId] = [..._labelCurrentTags];
+  saveUserLabels_store();
+  // Update pool track genres
+  S.trackPool.forEach(t => {
+    if ((tid2 && trackId(t.uri) === tid2) || t.artistId === _labelTarget.artistId) {
+      const existing = t.genres || [];
+      _labelCurrentTags.forEach(lbl => { if (!existing.includes(lbl)) existing.push(lbl); });
+      t.genres = existing;
+    }
+  });
+  if (!S.allGenres.includes(_labelCurrentTags[0])) {
+    _labelCurrentTags.forEach(lbl => { if (!S.allGenres.includes(lbl)) S.allGenres.push(lbl); });
+    S.activeGenres = new Set(S.allGenres);
+    renderGenreGroups();
+    updatePoolCount();
+  }
+  closeModal('modal-label');
+  toast('Etiquetas guardadas', 'ok');
+}
+
+// ══════════════════════════════════════════════════════════
+//  SEARCH (Part 6)
+// ══════════════════════════════════════════════════════════
+function openSearch() {
+  $('search-input').value = '';
+  $('search-results').innerHTML = '';
+  $('search-analysis').style.display = 'none';
+  $('search-actions').style.display = 'none';
+  S._searchResult = null;
+  openModal('modal-search');
+  setTimeout(() => $('search-input').focus(), 100);
+}
+function onSearchInput() {
+  clearTimeout(S._searchDebounce);
+  S._searchDebounce = setTimeout(doSearch, 400);
+}
+async function doSearch() {
+  const q = $('search-input').value.trim();
+  if (q.length < 2) { $('search-results').innerHTML = ''; return; }
+  $('search-results').innerHTML = '<div class="q-empty">Buscando...</div>';
+  const data = await api(`/search?type=track&q=${encodeURIComponent(q)}&limit=10&market=${S.user?.country||'US'}`).catch(() => null);
+  const tracks = data?.tracks?.items?.filter(Boolean) || [];
+  const c = $('search-results');
+  c.innerHTML = '';
+  $('search-analysis').style.display = 'none';
+  $('search-actions').style.display = 'none';
+  if (!tracks.length) { c.innerHTML = '<div class="q-empty">Sin resultados.</div>'; return; }
+  tracks.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'search-result';
+    const art = t.album?.images?.[0]?.url;
+    div.innerHTML = `${art ? `<img class="search-art" src="${art}" alt="">` : '<div class="search-art" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">🎵</div>'}<div style="flex:1;min-width:0"><div class="search-name">${t.name}</div><div class="search-meta"><span>${t.artists?.map(a=>a.name).join(', ')}</span><span>${fmt(t.duration_ms)}</span></div></div>`;
+    div.onclick = () => selectSearchResult(t);
+    c.appendChild(div);
+  });
+}
+async function selectSearchResult(t) {
+  $('search-results').innerHTML = '<div class="q-empty">Analizando...</div>';
+  const tid2 = t.id;
+  const artistId = t.artists?.[0]?.id;
+  const [af, artistData] = await Promise.all([
+    getAudioFeatures(tid2),
+    artistId ? api(`/artists/${artistId}`).catch(() => null) : null,
+  ]);
+  const genres = (artistData?.genres?.length ? artistData.genres : (S.artistGenres[artistId] || [])).slice(0, 4);
+  const track = {
+    uri: t.uri, name: t.name, artist: t.artists?.map(a=>a.name).join(', ') || '',
+    artistId, albumArt: t.album?.images?.[0]?.url || '', genres,
+    duration: t.duration_ms || 0, popularity: t.popularity || 60,
+  };
+  S._searchResult = track;
+  // Find matching family
+  const fams = getTrackFamilies(track);
+  let matchText = genres.length ? genres.slice(0,2).join(', ') : 'Sin clasificar';
+  if (fams.size) matchText = GENRE_FAMILIES.find(f => fams.has(f.id))?.id + (genres.length ? ` › ${genres[0]}` : '');
+  const anaEl = $('search-analysis');
+  anaEl.style.display = '';
+  const featureBars = af ? [
+    ['Energía', af.energy], ['Vibra', af.valence], ['Bailabilidad', af.danceability], ['Acústica', af.acousticness],
+  ].map(([lbl, val]) => `<div class="feature-bar-row"><span class="feature-bar-label">${lbl}</span><div class="feature-bar-track"><div class="feature-bar-fill" style="width:${Math.round(val*100)}%"></div></div><span class="feature-bar-val">${(val*100).toFixed(0)}</span></div>`).join('') : '';
+  anaEl.innerHTML = `<div class="search-analysis"><div class="analysis-match">📍 ${matchText}</div><div class="feature-bars">${featureBars}</div></div>`;
+  $('search-results').innerHTML = `<div class="search-result" style="background:var(--surface2);border-radius:8px;margin-bottom:0.5rem">${t.album?.images?.[0]?.url ? `<img class="search-art" src="${t.album.images[0].url}" alt="">` : ''}<div style="flex:1;min-width:0"><div class="search-name">${t.name}</div><div class="search-meta"><span>${track.artist}</span></div></div></div>`;
+  $('search-actions').style.display = 'flex';
+}
+async function playSearchResult() {
+  if (!S._searchResult) return;
+  closeModal('modal-search');
+  if (!S.deviceId) { toast('Reproductor no disponible', 'err'); return; }
+  await playTrackNow(S._searchResult);
+  toast(`▶ ${S._searchResult.name}`, 'ok');
+}
+async function queueSearchResult() {
+  if (!S._searchResult) return;
+  closeModal('modal-search');
+  S.upcoming.push(S._searchResult);
+  renderQueue();
+  toast(`➕ Añadido: ${S._searchResult.name}`, 'ok');
+}
+
+// ══════════════════════════════════════════════════════════
+//  VOLUME IMPROVEMENTS (Part 7)
+// ══════════════════════════════════════════════════════════
+function volIcon(pct) {
+  if (pct === 0) return '🔇';
+  if (pct <= 33) return '🔈';
+  if (pct <= 66) return '🔉';
+  return '🔊';
+}
+function toggleMute() {
+  const slider = $('vol-slider');
+  if (S._volMuted) {
+    S._volMuted = false;
+    slider.value = S._prevVol;
+    setVol(S._prevVol);
+  } else {
+    S._prevVol = parseInt(slider.value);
+    S._volMuted = true;
+    slider.value = 0;
+    setVol(0);
+  }
+}
+function editVolPct() {
+  const pctEl = $('vol-pct');
+  const cur = parseInt($('vol-slider').value);
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.min = 0; inp.max = 100; inp.value = cur;
+  inp.className = 'vol-pct-input';
+  pctEl.replaceWith(inp);
+  inp.focus(); inp.select();
+  const done = () => {
+    const v = Math.max(0, Math.min(100, parseInt(inp.value) || 0));
+    inp.replaceWith(pctEl);
+    $('vol-slider').value = v;
+    setVol(v);
+  };
+  inp.onblur = done;
+  inp.onkeydown = e => { if (e.key === 'Enter') done(); if (e.key === 'Escape') inp.replaceWith(pctEl); };
 }
 
 function loadLikesCache() {
@@ -833,22 +1552,28 @@ async function loadData() {
   if (!user) { toast('Error al obtener perfil', 'err'); showScreen('login-screen'); return; }
   S.user = user;
 
-  setProgress(8, 'Analizando top artistas (3 períodos)...');
-  const [sh, md, lg] = await Promise.all([
+  setProgress(8, 'Analizando top artistas y tracks (histórico)...');
+  const [sh, md, lg, ttShort, ttMed, ttLong, rp] = await Promise.all([
     api('/me/top/artists?time_range=short_term&limit=50'),
     api('/me/top/artists?time_range=medium_term&limit=50'),
     api('/me/top/artists?time_range=long_term&limit=50'),
-  ]);
-  const artistMap = new Map();
-  for (const set of [lg, md, sh]) for (const a of (set?.items || [])) if (!artistMap.has(a.id)) artistMap.set(a.id, a);
-  S.topArtists = [...artistMap.values()];
-
-  setProgress(20, 'Obteniendo top tracks y historial...');
-  const [tt, rp] = await Promise.all([
+    api('/me/top/tracks?time_range=short_term&limit=50'),
     api('/me/top/tracks?time_range=medium_term&limit=50'),
+    api('/me/top/tracks?time_range=long_term&limit=50'),
     api('/me/player/recently-played?limit=50'),
   ]);
-  S.topTracks = tt?.items || [];
+  const artistMap = new Map();
+  let rank = 0;
+  for (const set of [lg, md, sh]) for (const a of (set?.items || [])) {
+    if (!artistMap.has(a.id)) { artistMap.set(a.id, a); S.topArtistRank[a.id] = rank++; }
+  }
+  S.topArtists = [...artistMap.values()];
+
+  // Merge top tracks from all periods (long_term gives widest history)
+  const trackMergeMap = new Map();
+  for (const set of [ttLong, ttMed, ttShort]) for (const t of (set?.items || [])) if (t && !trackMergeMap.has(t.id)) trackMergeMap.set(t.id, t);
+  S.topTracks = [...trackMergeMap.values()];
+  S.topTracksLong = ttLong?.items || [];
   S.recentTracks = rp?.items?.map(i => i.track).filter(Boolean) || [];
 
   setProgress(28, 'Detectando géneros...');
@@ -905,8 +1630,9 @@ async function loadData() {
   await sleep(400);
   renderApp();
   showScreen('app-screen');
-  // Load playlists in background
+  // Background tasks (don't block UI)
   loadUserPlaylists().catch(() => {});
+  setTimeout(() => classifyUntaggedInBackground().catch(() => {}), 3000);
 }
 
 async function loadLikedFromSpotify() {
@@ -959,10 +1685,14 @@ function renderApp() {
     const av = S.user.images?.[0]?.url;
     if (av) { $('hdr-avatar').src = av; $('hdr-avatar').style.display = ''; }
   }
-  // Fix shuffle initial state
   $('btn-shuffle').classList.toggle('active', S.shuffle);
+  const restored = restoreSessionConfig();
+  applyMoodSlidersFromState();
   renderGenreGroups();
   updatePoolCount();
+  renderVetoList();
+  const recentN = recentPenaltyUris().size;
+  if (restored) setTimeout(() => toast(`🔄 Configuración restaurada · Evitando ${recentN} tracks recientes`, 'ok', 4000), 600);
 }
 
 // ──────────────────────────────────────────────────────────
@@ -975,6 +1705,16 @@ function renderGenreGroups() {
   // "Mis Likes" block always first
   container.appendChild(buildLikesBlock());
 
+  // "Mis Etiquetas" block (user-defined labels)
+  const allUserLabels = [...new Set([
+    ...Object.values(S.userLabels).flat(),
+    ...Object.values(S.userLabelTracks).flat(),
+  ])];
+  if (allUserLabels.length) {
+    const grp = { id: 'grp-user-labels', nombre: 'Mis Etiquetas', icon: '✍️', generos: allUserLabels, _cls: 'user-labels-block' };
+    container.appendChild(buildGroupEl(grp));
+  }
+
   if (!S.allGenres.length) {
     const el = document.createElement('span');
     el.className = 'genre-empty';
@@ -986,11 +1726,39 @@ function renderGenreGroups() {
   if (S.genreGroups.length) {
     S.genreGroups.forEach(grp => container.appendChild(buildGroupEl(grp)));
   } else {
-    // Fallback: flat single group
     const grp = { id: 'grp-flat', nombre: 'Géneros', icon: '🎵', generos: S.allGenres };
     container.appendChild(buildGroupEl(grp));
   }
+
+  // "Sin Etiqueta" block — artists/tracks with no detected genres
+  const untaggedArtists = S.topArtists
+    .filter(a => !S.artistGenres[a.id]?.length && !(S.userLabels[a.id]?.length))
+    .slice(0, 20);
+  if (untaggedArtists.length) {
+    const names = untaggedArtists.map(a => a.name);
+    const wrap = document.createElement('div');
+    wrap.className = 'genre-group unlabeled-block';
+    let expanded = false;
+    const hdr = document.createElement('div');
+    hdr.className = 'group-header';
+    hdr.innerHTML = `<span class="group-icon">🏷️</span><span class="group-name">Sin Etiqueta</span><span class="group-count">${untaggedArtists.length} artistas</span>`;
+    hdr.onclick = () => { expanded = !expanded; tagsRow.style.display = expanded ? '' : 'none'; };
+    const tagsRow = document.createElement('div');
+    tagsRow.className = 'group-tags';
+    tagsRow.style.display = 'none';
+    untaggedArtists.forEach(a => {
+      const tag = document.createElement('div');
+      tag.style.cssText = 'font-family:"Space Mono",monospace;font-size:0.63rem;color:var(--muted);padding:0.2rem 0.6rem;border:1px solid var(--border);border-radius:999px;display:inline-flex;align-items:center;gap:0.3rem;cursor:pointer';
+      tag.innerHTML = `${a.name} <span style="font-size:0.55rem;opacity:0.6" onclick="event.stopPropagation();openLabelForArtist('${a.id}','${a.name.replace(/'/g,"\\'")}')">✏️</span>`;
+      tagsRow.appendChild(tag);
+    });
+    wrap.appendChild(hdr);
+    wrap.appendChild(tagsRow);
+    container.appendChild(wrap);
+  }
+
   updateGenreCount();
+  saveSessionConfig();
 }
 
 function buildGroupEl(grp) {
@@ -999,7 +1767,7 @@ function buildGroupEl(grp) {
   const toggleState = activeInGrp === 0 ? 'off' : activeInGrp === totalInGrp ? 'on' : 'mixed';
 
   const wrap = document.createElement('div');
-  wrap.className = 'genre-group';
+  wrap.className = 'genre-group' + (grp._cls ? ' ' + grp._cls : '');
   wrap.id = 'group-' + grp.id;
 
   const hdr = document.createElement('div');
@@ -1108,6 +1876,7 @@ function toggleGenreTag(g, grp) {
   updateGenreCount();
   updatePoolCount();
   refreshPlayerPills();
+  saveSessionConfig();
 }
 
 // Toggle a genre directly from a pill in the player or queue
@@ -1128,7 +1897,7 @@ function toggleGenrePill(g) {
 
 // Re-render the now-playing pills and queue pills without touching anything else
 function refreshPlayerPills() {
-  if (S.currentTrack) renderGenrePills($('track-pills'), S.currentTrack.genres || [], 4);
+  if (S.currentTrack) renderGenrePills($('track-pills'), S.currentTrack.genres || [], 5);
   // Update every pill already rendered in the queue
   document.querySelectorAll('.q-pills .q-pill').forEach(pill => {
     const g = pill.textContent;
@@ -1149,6 +1918,7 @@ function setAllGenres(on) {
   else S.activeGenres.clear();
   renderGenreGroups();
   updatePoolCount();
+  saveSessionConfig();
 }
 
 function updateGenreCount() {
@@ -1164,23 +1934,25 @@ function setMode(mode) {
 //  TRACK POOL & WEIGHTED SELECTION
 // ══════════════════════════════════════════════════════════
 function filteredPool() {
-  if (S.activeGenres.size === 0 || S.activeGenres.size === S.allGenres.length) return S.trackPool;
-  return S.trackPool.filter(t => t.genres.length === 0 || t.genres.some(g => S.activeGenres.has(g)));
+  let pool = S.trackPool;
+  // Genre filter
+  if (S.activeGenres.size > 0 && S.activeGenres.size < S.allGenres.length) {
+    pool = pool.filter(t => t.genres.length === 0 || t.genres.some(g => S.activeGenres.has(g)));
+  }
+  // Veto filter
+  pool = pool.filter(t => !isVetoed(t));
+  return pool;
 }
 
 function updatePoolCount() { $('pool-num').textContent = filteredPool().length; }
 
 function trackScore(t) {
   let score = 1;
-  // Liked genre bonus
   for (const g of (t.genres || [])) score += (S.feedback.likedGenres[g] || 0) * 0.4;
-  // Liked artist bonus
   if (t.artistId) score += (S.feedback.likedArtists[t.artistId] || 0) * 0.8;
-  // Likes block bonus (expand search, not penalise others)
   if (S.likesBlock.active && t.genres?.some(g => S.likesBlock.genres.has(g))) score *= 1.4;
-  // Skip penalty
   if (S.feedback.skippedUris.has(t.uri)) score *= 0.15;
-  // Do NOT boost already-played tracks
+  if (S._penaltyCache?.has(t.uri)) score *= 0.05;
   return Math.max(0.01, score * (1 + t.popularity / 300));
 }
 
@@ -1196,12 +1968,14 @@ function weightedPick(items) {
 function pickFromPool() {
   const pool = filteredPool();
   if (!pool.length) return null;
-  const recentUris = new Set([
-    ...S.playHistory.slice(-20).map(t => t.uri),
+  // Cache 72h penalty set so trackScore can use it without recomputing
+  S._penaltyCache = recentPenaltyUris();
+  const usedRecently = new Set([
+    ...S.playHistory.slice(-5).map(t => t.uri),
     ...S.upcoming.map(t => t.uri),
   ]);
-  const available = pool.filter(t => !recentUris.has(t.uri));
-  return weightedPick(available.length ? available : pool);
+  const candidates = pool.filter(t => !usedRecently.has(t.uri));
+  return pickCoherent(candidates.length ? candidates : pool);
 }
 
 async function pickByMode() {
@@ -1247,7 +2021,9 @@ async function startDJ() {
   if (!filteredPool().length) { toast('Sin tracks disponibles con los géneros seleccionados', 'err'); return; }
   S.djRunning = true; S.playHistory = []; S.upcoming = []; S.lastPreQueued = null;
   $('dj-btn').textContent = '■  Detener DJ'; $('dj-btn').classList.add('stop');
-  $('live-dot').classList.add('on'); $('live-text').textContent = 'DJ Activo — Cola infinita';
+  const recentN = recentPenaltyUris().size;
+  const liveMsg = recentN > 0 ? `DJ Activo · Evitando ${recentN} tracks recientes` : 'DJ Activo — Cola infinita';
+  $('live-dot').classList.add('on'); $('live-text').textContent = liveMsg;
   $('np-label').className = 'np-label on'; $('np-label').textContent = 'EN VIVO';
 
   const first = await pickByMode();
@@ -1289,13 +2065,27 @@ async function playTrackNow(track) {
   if (!S.deviceId || !track) return;
   try {
     await api(`/me/player/play?device_id=${S.deviceId}`, { method:'PUT', body:JSON.stringify({ uris:[track.uri] }) });
+    // Record completion of previous track
+    if (S.currentTrack) {
+      const elapsed = Date.now() - S._trackStartTime;
+      addToFullHistory(S.currentTrack, elapsed > 0.7 * (S._lastDuration || S.currentTrack.duration || 1));
+    }
     S.playHistory.push(track);
     if (S.playHistory.length > 80) S.playHistory.shift();
+    // Build selection reason before updating currentTrack
+    const reason = buildSelectionReason(track);
     S.currentTrack = track;
     S.lastShownUri = track.uri;
     S._trackStartTime = Date.now();
-    renderNowPlaying(track);
+    // Update recent genre families for coherence
+    const fams = [...getTrackFamilies(track)];
+    if (fams.length) S.recentFamilies = [...S.recentFamilies, ...fams].slice(-3);
+    // Fetch audio features asynchronously for next pick
+    const tid2 = trackId(track.uri);
+    if (tid2 && !S.audioFeatures[tid2]) getAudioFeatures(tid2).catch(() => {});
+    renderNowPlaying(track, reason);
     checkIsLiked(trackId(track.uri));
+    saveSessionConfig();
   } catch(e) { console.error('Play error', e); toast('Error al reproducir', 'err'); }
 }
 async function queueUri(uri) {
@@ -1360,7 +2150,13 @@ async function cycleRepeat() {
   toast(S.repeat === 'track' ? 'Repetir canción' : 'Repetición desactivada');
 }
 
-function setVol(val) { if (S.player) S.player.setVolume(val / 100); }
+function setVol(val) {
+  const v = parseInt(val);
+  if (S.player) S.player.setVolume(v / 100);
+  const icon = $('vol-icon'), pct = $('vol-pct');
+  if (icon) icon.textContent = volIcon(v);
+  if (pct && pct.tagName !== 'INPUT') pct.textContent = v + '%';
+}
 
 function seekClick(e) {
   if (!S.player || !S._lastDuration) return;
@@ -1540,13 +2336,15 @@ function updatePlayerUI(ps) {
   }
 }
 
-function renderNowPlaying(track) {
+function renderNowPlaying(track, reason) {
   $('track-name').textContent   = track.name || '—';
   $('track-artist').textContent = track.artist || '';
   const art = $('album-art'), ph = $('album-ph');
   if (track.albumArt) { art.src = track.albumArt; art.style.display = ''; ph.style.display = 'none'; }
   else { art.style.display = 'none'; ph.style.display = ''; }
-  renderGenrePills($('track-pills'), track.genres || [], 4);
+  renderGenrePills($('track-pills'), track.genres || [], 5);
+  const reasonEl = $('selection-reason');
+  if (reasonEl) reasonEl.innerHTML = reason || '';
 }
 
 function renderGenrePills(container, genres, maxCount) {
@@ -1580,16 +2378,38 @@ function renderQueue() {
         <div class="q-name">${t.name}</div>
         <div class="q-artist">${t.artist}</div>
         <div class="q-pills" data-uri="${t.uri}"></div>
+      </div>
+      <div class="q-actions">
+        <button class="q-action-btn" title="Reproducir ahora">▶</button>
+        <button class="q-action-btn remove" title="Eliminar de cola">✕</button>
       </div>`;
 
-    // Render interactive genre pills for this queue item
+    // Queue item click → play now
+    d.querySelector('.q-action-btn').onclick = e => {
+      e.stopPropagation();
+      const track = S.upcoming.splice(i, 1)[0];
+      playTrackNow(track).then(() => renderQueue());
+    };
+    // Remove from queue
+    d.querySelector('.q-action-btn.remove').onclick = e => {
+      e.stopPropagation();
+      S.upcoming.splice(i, 1);
+      renderQueue();
+    };
+    // Click anywhere else on row also plays
+    d.onclick = () => {
+      const track = S.upcoming.splice(i, 1)[0];
+      playTrackNow(track).then(() => renderQueue());
+    };
+
+    // Genre pills
     const pillsEl = d.querySelector('.q-pills');
     (t.genres || []).slice(0, 3).forEach(g => {
       const pill = document.createElement('span');
       pill.className = 'q-pill' + (S.activeGenres.has(g) ? ' on' : '');
       pill.textContent = g;
       pill.title = S.activeGenres.has(g) ? `Desactivar "${g}"` : `Activar "${g}"`;
-      pill.onclick = () => toggleGenrePill(g);
+      pill.onclick = e => { e.stopPropagation(); toggleGenrePill(g); };
       pillsEl.appendChild(pill);
     });
 
@@ -1603,17 +2423,23 @@ function renderQueue() {
 async function init() {
   $('redirect-uri-hint').textContent = REDIRECT_URI;
 
-  // Load persisted data
+  // Generate session ID
+  S.sessionId = 'sess_' + Date.now().toString(36);
+
+  // Load all persisted data
   loadFeedback();
   loadLikesCache();
+  loadVetoes();
+  loadUserLabels();
+  loadPlayHistoryFull();
 
   const savedId = localStorage.getItem('dj_client_id');
   if (savedId) $('inp-clientId').value = savedId;
   const savedLf = localStorage.getItem('dj_lastfm');
   if (savedLf) $('inp-lastfm').value = savedLf;
 
-  S.clientId    = localStorage.getItem('dj_client_id');
-  S.lastfmKey   = localStorage.getItem('dj_lastfm') || null;
+  S.clientId     = localStorage.getItem('dj_client_id');
+  S.lastfmKey    = localStorage.getItem('dj_lastfm') || null;
   S.anthropicKey = localStorage.getItem('dj_anthropic') || null;
 
   if (location.search.includes('code=')) {
