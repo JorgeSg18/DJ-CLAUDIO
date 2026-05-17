@@ -110,12 +110,11 @@ input.mood-dual-range { position: absolute; width: 100%; height: 12px; -webkit-a
 input.mood-dual-range::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 26px; background: linear-gradient(180deg, #6060a0 0%, #2a2a50 50%, #1a1a3e 100%); border: 1px solid rgba(168,85,247,0.6); border-radius: 4px; cursor: grab; box-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 0 8px rgba(168,85,247,0.2); }
 input.mood-dual-range::-webkit-slider-runnable-track { background: transparent; height: 12px; }
 input.mood-dual-range.mood-max::-webkit-slider-thumb { background: linear-gradient(180deg, #40a0c0 0%, #1a5070 50%, #0a2a40 100%); border-color: rgba(34,211,238,0.6); box-shadow: 0 2px 6px rgba(0,0,0,0.6), 0 0 8px rgba(34,211,238,0.2); }
-.mood-pct-row { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; margin-top: 0.15rem; }
-.mood-pct-lbl { font-family: 'Space Mono', monospace; font-size: 0.55rem; color: var(--muted); }
-.mood-pct-inp { font-family: 'Space Mono', monospace; font-size: 0.65rem; width: 44px; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; color: var(--accent); padding: 0.2rem 0.35rem; text-align: center; outline: none; -moz-appearance: textfield; }
+.mood-pct-row { display: flex; align-items: center; justify-content: center; gap: 0.3rem; margin-top: 0.2rem; }
+.mood-pct-lbl { font-family: 'Space Mono', monospace; font-size: 0.52rem; color: var(--muted); }
+.mood-pct-inp { font-family: 'Space Mono', monospace; font-size: 0.68rem; width: 44px; background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; color: var(--accent); padding: 0.2rem 0.3rem; text-align: center; outline: none; -moz-appearance: textfield; }
 .mood-pct-inp::-webkit-outer-spin-button, .mood-pct-inp::-webkit-inner-spin-button { -webkit-appearance: none; }
-.mood-pct-inp:focus { border-color: var(--accent); }
-.mood-pct-sep { font-family: 'Space Mono', monospace; font-size: 0.6rem; color: var(--muted); }
+.mood-pct-inp:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
 
 /* ── MAIN DJ BUTTON ── */
 .dj-command { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
@@ -181,6 +180,13 @@ input.mood-dual-range.mood-max::-webkit-slider-thumb { background: linear-gradie
   box-shadow: 0 0 8px var(--accent-glow);
 }
 .mode-chip-icon { font-size: 0.85rem; }
+.mode-chip.serendipia {
+  border-color: rgba(248,113,113,0.5); color: var(--red);
+  background: rgba(248,113,113,0.06); font-size: 0.6rem; position: relative;
+}
+.mode-chip.serendipia:hover { border-color: var(--red); background: rgba(248,113,113,0.14); box-shadow: 0 0 10px rgba(248,113,113,0.25); }
+.mode-chip.serendipia.on { border-color: var(--red); background: rgba(248,113,113,0.18); color: #fff; box-shadow: 0 0 12px rgba(248,113,113,0.4); }
+.serendipia-warn { font-family: 'Space Mono', monospace; font-size: 0.45rem; color: rgba(248,113,113,0.7); display: block; margin-top: 0.1rem; letter-spacing: 0.05em; }
 
 /* ── GENRE BLOCK BUTTONS ── */
 .blocks-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
@@ -218,10 +224,19 @@ input.mood-dual-range.mood-max::-webkit-slider-thumb { background: linear-gradie
 .likes-block .group-led.on { background: var(--gold); }
 
 .group-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.5rem 0.9rem 0.65rem; border: 1px solid var(--border); border-top: none; border-radius: 0 0 9px 9px; background: rgba(0,0,0,0.2); }
-.g-tag { font-family: 'Space Mono', monospace; font-size: 0.63rem; padding: 0.22rem 0.6rem; border-radius: 5px; border: 1px solid var(--border); color: var(--muted); background: var(--surface2); cursor: pointer; user-select: none; transition: all 0.12s; }
-.g-tag:hover { border-color: var(--accent); color: var(--text); background: var(--accent-dim); }
+.g-tag { font-family: 'Space Mono', monospace; font-size: 0.63rem; padding: 0.22rem 0.6rem; border-radius: 5px; border: 1px solid var(--border); color: var(--muted); background: var(--surface2); cursor: pointer; user-select: none; transition: border-color 0.12s, background 0.12s, color 0.12s; }
+.g-tag:hover { border-color: rgba(168,85,247,0.5); color: var(--text); background: rgba(168,85,247,0.08); }
 .g-tag.on { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+.g-tag.on:hover { border-color: var(--accent); background: rgba(168,85,247,0.3); }
+/* User-label variant */
+.g-tag.user-label { border-color: rgba(34,211,238,0.3); color: rgba(34,211,238,0.7); background: rgba(34,211,238,0.05); }
+.g-tag.user-label:hover { border-color: rgba(34,211,238,0.6); color: var(--cyan); background: rgba(34,211,238,0.12); }
+.g-tag.user-label.on { border-color: var(--cyan); background: rgba(34,211,238,0.2); color: var(--text); }
+.g-tag.user-label.on:hover { border-color: var(--cyan); background: rgba(34,211,238,0.3); }
 .genre-empty { font-family: 'Space Mono', monospace; font-size: 0.68rem; color: var(--muted); padding: 0.4rem 0; }
+.g-tag[draggable=true] { cursor: grab; }
+.g-tag.dragging { opacity: 0.4; cursor: grabbing; }
+.group-tags.drag-over { background: rgba(168,85,247,0.08); border-color: var(--accent); outline: 2px dashed var(--accent-dim); }
 
 /* ── GENRE BAR ── */
 .genre-bar { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
@@ -290,14 +305,10 @@ input.mood-dual-range.mood-max::-webkit-slider-thumb { background: linear-gradie
 }
 .tg-pill.off:hover { border-color: var(--accent); opacity: 1; }
 /* User-created label pills — cyan, with pencil marker */
-.tg-pill.user-label {
-  background: rgba(34,211,238,0.12); color: var(--cyan);
-  border-color: rgba(34,211,238,0.35);
-}
-.tg-pill.user-label:hover { background: rgba(34,211,238,0.25); }
-.tg-pill.user-label.off { color: var(--muted); border-color: var(--border); background: transparent; }
-/* g-tag user label variant */
-.g-tag.user-label { border-color: rgba(34,211,238,0.35); color: var(--cyan); background: rgba(34,211,238,0.08); }
+.tg-pill.user-label { background: rgba(34,211,238,0.12); color: var(--cyan); border-color: rgba(34,211,238,0.35); }
+.tg-pill.user-label:hover { background: rgba(34,211,238,0.25); border-color: var(--cyan); }
+.tg-pill.user-label.off { color: var(--muted); border-color: var(--border); background: transparent; opacity: 0.55; text-decoration: line-through; }
+.tg-pill.user-label.off:hover { opacity: 0.85; border-color: rgba(34,211,238,0.35); text-decoration: none; }
 /* Queue genre pills */
 .q-pills { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem; }
 .q-pill {
@@ -625,11 +636,8 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
             <span class="mood-dual-emoji">⚡</span>
           </div>
           <div class="mood-pct-row">
-            <span class="mood-pct-lbl">mín</span>
-            <input class="mood-pct-inp" id="emin-pct" type="number" min="0" max="100" value="0" onchange="setPctManual('emin',this.value)">
-            <span class="mood-pct-sep">%&nbsp;—</span>
-            <input class="mood-pct-inp" id="emax-pct" type="number" min="0" max="100" value="100" onchange="setPctManual('emax',this.value)">
-            <span class="mood-pct-lbl">% máx</span>
+            <input class="mood-pct-inp" id="emax-pct" type="number" min="0" max="100" value="100" onchange="setPctManual('emax',this.value)" title="Energía máxima %">
+            <span class="mood-pct-lbl">% energía</span>
           </div>
         </div>
 
@@ -648,6 +656,10 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
             </div>
             <div class="mode-chip" data-mode="discovery" onclick="setMode('discovery')" title="Descubrimiento">
               <span class="mode-chip-icon">🔭</span> Exp
+            </div>
+            <div class="mode-chip serendipia" data-mode="serendipia" onclick="activateSerendipia()" title="Música completamente nueva · No basada en tus gustos">
+              <span class="mode-chip-icon">🎲</span> Serendipia
+              <span class="serendipia-warn">⚠ Territorio desconocido</span>
             </div>
           </div>
           <!-- Quick actions -->
@@ -673,11 +685,8 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
             <span class="mood-dual-emoji">😄</span>
           </div>
           <div class="mood-pct-row">
-            <span class="mood-pct-lbl">mín</span>
-            <input class="mood-pct-inp" id="vmin-pct" type="number" min="0" max="100" value="0" onchange="setPctManual('vmin',this.value)">
-            <span class="mood-pct-sep">%&nbsp;—</span>
-            <input class="mood-pct-inp" id="vmax-pct" type="number" min="0" max="100" value="100" onchange="setPctManual('vmax',this.value)">
-            <span class="mood-pct-lbl">% máx</span>
+            <input class="mood-pct-inp" id="vmax-pct" type="number" min="0" max="100" value="100" onchange="setPctManual('vmax',this.value)" title="Vibra máxima %">
+            <span class="mood-pct-lbl">% vibra</span>
           </div>
         </div>
 
@@ -1175,9 +1184,7 @@ function applyPitchFillsFromState() {
   const ef = $('pitch-e-fill'); if (ef) { ef.style.left = '0%'; ef.style.width = emax + '%'; }
   const vf = $('pitch-v-fill'); if (vf) { vf.style.left = '0%'; vf.style.width = vmax + '%'; }
   // Sync manual % inputs
-  const ep1 = $('emin-pct'); if (ep1) ep1.value = emin;
   const ep2 = $('emax-pct'); if (ep2) ep2.value = emax;
-  const vp1 = $('vmin-pct'); if (vp1) vp1.value = vmin;
   const vp2 = $('vmax-pct'); if (vp2) vp2.value = vmax;
   // Sync slider positions
   const eminEl = $('mood-emin'); if (eminEl) eminEl.value = emin;
@@ -2293,14 +2300,58 @@ function buildGroupEl(grp) {
   const tagsRow = document.createElement('div');
   tagsRow.className = 'group-tags';
   tagsRow.style.display = 'none'; // collapsed by default; click header to expand
+  // Drop target for tags from other blocks
+  tagsRow.ondragover = e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; tagsRow.classList.add('drag-over'); };
+  tagsRow.ondragleave = () => tagsRow.classList.remove('drag-over');
+  tagsRow.ondrop = e => {
+    e.preventDefault();
+    tagsRow.classList.remove('drag-over');
+    try {
+      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+      if (!data.genre || data.srcId === grp.id) return; // same block, ignore
+      const confirmed = confirm(`¿Mover "${data.genre}" de "${data.srcNombre}" a "${grp.nombre}"?`);
+      if (!confirmed) return;
+      // Remove from source block
+      const srcGrp = [...S.genreGroups, ...S.customBlocks].find(b => b.id === data.srcId);
+      if (srcGrp) {
+        const idx = srcGrp.generos.indexOf(data.genre);
+        if (idx !== -1) srcGrp.generos.splice(idx, 1);
+        // If source was a custom block, persist
+        if (S.customBlocks.find(b => b.id === data.srcId)) saveCustomBlocks();
+      }
+      // Also remove from user labels block source if it was there
+      if (data.srcId === 'grp-user-labels') {
+        Object.keys(S.userLabels).forEach(k => {
+          S.userLabels[k] = S.userLabels[k].filter(l => l !== data.genre);
+        });
+        Object.keys(S.userLabelTracks).forEach(k => {
+          S.userLabelTracks[k] = S.userLabelTracks[k].filter(l => l !== data.genre);
+        });
+        saveUserLabels_store();
+      }
+      // Add to target block
+      if (!grp.generos.includes(data.genre)) grp.generos.push(data.genre);
+      if (S.customBlocks.find(b => b.id === grp.id)) saveCustomBlocks();
+      // Update S.activeGenres membership (genre itself stays in allGenres)
+      renderGenreGroups();
+      toast(`"${data.genre}" movido a "${grp.nombre}"`, 'ok', 2500);
+    } catch {}
+  };
   grp.generos.forEach(g => {
     const tag = document.createElement('div');
-    // User-label blocks show genres in cyan
     const isUserLabel = grp._isUserBlock;
     tag.className = 'g-tag' + (isUserLabel ? ' user-label' : '') + (S.activeGenres.has(g) ? ' on' : '');
     tag.textContent = isUserLabel ? '✏ ' + g : g;
     tag.id = `gtag-${CSS.escape(g)}`;
+    tag.draggable = true;
     tag.onclick = e => { e.stopPropagation(); toggleGenreTag(g, grp); };
+    // Drag-and-drop
+    tag.ondragstart = e => {
+      e.dataTransfer.setData('text/plain', JSON.stringify({ genre: g, srcId: grp.id, srcNombre: grp.nombre }));
+      e.dataTransfer.effectAllowed = 'move';
+      tag.classList.add('dragging');
+    };
+    tag.ondragend = () => tag.classList.remove('dragging');
     tagsRow.appendChild(tag);
   });
 
@@ -2444,6 +2495,17 @@ function setMode(mode) {
   document.querySelectorAll('.mode-card, .mode-chip').forEach(c => c.classList.toggle('on', c.dataset.mode === mode));
 }
 
+function activateSerendipia() {
+  const confirmed = confirm('🎲 Modo SERENDIPIA\n\nVas a escuchar música completamente nueva, no basada en tus gustos. Todos los bloques se desactivarán.\n\nPuedes etiquetar y "hacer tuyas" estas canciones al escucharlas.\n\n¿Entras en territorio desconocido?');
+  if (!confirmed) return;
+  // Deactivate all genres
+  S.activeGenres.clear();
+  setMode('serendipia');
+  renderGenreGroups();
+  updatePoolCount();
+  toast('🎲 Modo Serendipia activado · Música nueva te espera', '', 3500);
+}
+
 // ══════════════════════════════════════════════════════════
 //  TRACK POOL & WEIGHTED SELECTION
 // ══════════════════════════════════════════════════════════
@@ -2532,6 +2594,21 @@ async function toggleDJ() {
 }
 async function startDJ() {
   if (!S.deviceId) { toast('Reproductor no disponible. ¿Spotify Premium?', 'err'); return; }
+
+  // If no genres active and not already in serendipia mode, ask user
+  if (S.activeGenres.size === 0 && S.mode !== 'serendipia') {
+    const go = confirm('⚠️ No tienes ninguna etiqueta activa.\n\nEntrarás en modo "Serendipia" — música completamente nueva, sin filtros de gustos.\n\n¿Estás seguro?');
+    if (!go) return;
+    setMode('serendipia');
+    toast('🎲 Entrando en modo Serendipia...', '', 2500);
+  }
+
+  // For serendipia mode, load tracks from new releases (not from trackPool)
+  if (S.mode === 'serendipia') {
+    await startSerendipiaMode();
+    return;
+  }
+
   if (!filteredPool().length) { toast('Sin tracks disponibles con los géneros seleccionados', 'err'); return; }
   S.djRunning = true; S.playHistory = []; S.upcoming = []; S.lastPreQueued = null;
   $('dj-btn').textContent = '■'; $('dj-btn').classList.add('stop');
@@ -2557,6 +2634,80 @@ function stopDJ() {
   $('live-dot').classList.remove('on'); $('live-text').textContent = 'DJ Detenido';
   $('np-label').className = 'np-label'; $('np-label').textContent = 'AHORA SUENA';
 }
+
+async function startSerendipiaMode() {
+  S.djRunning = true; S.playHistory = []; S.upcoming = []; S.lastPreQueued = null;
+  $('dj-btn').textContent = '■'; $('dj-btn').classList.add('stop');
+  const djLbl = $('dj-label'); if (djLbl) { djLbl.textContent = '🎲 SERENDIPIA ●'; djLbl.classList.add('running'); }
+  $('live-dot').classList.add('on'); $('live-text').textContent = '🎲 Modo Serendipia — Territorio desconocido';
+  $('np-label').className = 'np-label on'; $('np-label').textContent = '🎲 SERENDIPIA';
+
+  const first = await pickSerendipiaTrack();
+  if (!first) { toast('No se pudo cargar Serendipia. ¿Conexión OK?', 'err'); stopDJ(); return; }
+  await playTrackNow(first);
+
+  // Pre-queue a few more
+  for (let i = 0; i < 4; i++) {
+    const t = await pickSerendipiaTrack();
+    if (t) S.upcoming.push(t);
+  }
+  renderQueue();
+  S.pollTimer = setInterval(poll, 1000);
+}
+
+async function pickSerendipiaTrack() {
+  try {
+    // Fetch new releases
+    const nr = await api('/browse/new-releases?limit=20&country=' + (S.user?.country || 'US')).catch(() => null);
+    const albums = nr?.albums?.items?.filter(Boolean) || [];
+    if (!albums.length) {
+      // Fallback: featured playlists
+      const fp = await api('/browse/featured-playlists?limit=10&country=' + (S.user?.country || 'US')).catch(() => null);
+      const playlists = fp?.playlists?.items?.filter(Boolean) || [];
+      if (!playlists.length) return null;
+      const pl = playlists[rand(playlists.length)];
+      const plTracks = await api(`/playlists/${pl.id}/tracks?limit=30&fields=items(track(uri,name,artists,album,duration_ms,popularity))`).catch(() => null);
+      const items = plTracks?.items?.filter(i => i?.track?.uri).map(i => i.track) || [];
+      if (!items.length) return null;
+      const pick = items[rand(items.length)];
+      return await serendipiaTrackObj(pick);
+    }
+    // Pick a random album and get its tracks
+    const album = albums[rand(albums.length)];
+    const albumTracks = await api(`/albums/${album.id}/tracks?limit=20`).catch(() => null);
+    const tracks = albumTracks?.items?.filter(t => t?.uri) || [];
+    if (!tracks.length) return null;
+    const pick = tracks[rand(tracks.length)];
+    // Enrich with album art
+    pick.album = pick.album || { images: album.images, name: album.name };
+    if (!pick.album?.images?.length) pick.album.images = album.images;
+    return await serendipiaTrackObj(pick);
+  } catch { return null; }
+}
+
+async function serendipiaTrackObj(t) {
+  const artistId = t.artists?.[0]?.id;
+  let genres = [];
+  if (artistId) {
+    if (!S.artistGenres[artistId]) {
+      const aData = await api(`/artists/${artistId}`).catch(() => null);
+      if (aData?.genres?.length) { S.artistGenres[artistId] = aData.genres; genres = aData.genres; }
+    } else { genres = S.artistGenres[artistId]; }
+  }
+  // Fetch and cache audio features for coherence scoring later
+  const tid = t.id || t.uri?.split(':')?.[2];
+  if (tid && !S.audioFeatures[tid]) getAudioFeatures(tid).then(af => { if (af) S.audioFeatures[tid] = af; });
+  return {
+    uri: t.uri, name: t.name,
+    artist: t.artists?.map(a => a.name).join(', ') || '',
+    artistId,
+    albumArt: t.album?.images?.[0]?.url || '',
+    genres,
+    duration: t.duration_ms || 0,
+    popularity: t.popularity || 50,
+    _serendipia: true,
+  };
+}
 async function poll() {
   if (!S.player || !S.djRunning) return;
   let ps; try { ps = await S.player.getCurrentState(); } catch { return; }
@@ -2567,7 +2718,7 @@ async function poll() {
   if (curUri && remaining > 0 && remaining < 30000 && S.lastPreQueued !== curUri) {
     S.lastPreQueued = curUri;
     let next = S.upcoming.shift();
-    if (!next) next = await pickByMode();
+    if (!next) next = S.mode === 'serendipia' ? await pickSerendipiaTrack() : await pickByMode();
     if (next) {
       await queueUri(next.uri);
       const fill = pickFromPool();
