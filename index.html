@@ -2471,8 +2471,53 @@ function renderGenreGroups() {
     container.appendChild(wrap);
   }
 
+  // "Artistas Etiquetados" — re-label or remove labels from already-labeled artists
+  const labeledArtists = S.topArtists.filter(a => a.id && S.userLabels[a.id]?.length);
+  if (labeledArtists.length) {
+    const wrapL = document.createElement('div');
+    wrapL.className = 'genre-group';
+    let expandedL = window._labeledExpanded || false;
+    const hdrL = document.createElement('div');
+    hdrL.style.cssText = 'display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.9rem;background:var(--surface);border:1px solid var(--border);border-radius:9px;cursor:pointer;user-select:none;opacity:0.72';
+    hdrL.innerHTML = `<span style="font-size:0.8rem">✏️</span><span style="font-size:0.72rem;font-weight:600;color:var(--muted);flex:1">Artistas Etiquetados</span><span style="font-family:'Space Mono',monospace;font-size:0.55rem;color:var(--muted)">${labeledArtists.length}</span>`;
+    const tagsL = document.createElement('div');
+    tagsL.className = 'group-tags';
+    tagsL.style.display = expandedL ? '' : 'none';
+    hdrL.onclick = () => { expandedL = !expandedL; window._labeledExpanded = expandedL; tagsL.style.display = expandedL ? '' : 'none'; };
+    labeledArtists.forEach(a => {
+      const labels = S.userLabels[a.id] || [];
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:0.4rem;padding:0.25rem 0;border-bottom:1px solid rgba(255,255,255,0.04);width:100%';
+      row.innerHTML = `
+        <span style="font-family:'Space Mono',monospace;font-size:0.62rem;color:var(--muted);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.name}</span>
+        <span style="font-family:'Space Mono',monospace;font-size:0.55rem;color:var(--cyan);opacity:0.75">${labels.join(', ')}</span>
+        <button title="Editar etiquetas" onclick="window._untaggedExpanded=true;window._labeledExpanded=true;openLabelForArtist('${a.id}','${a.name.replace(/'/g,"\\'")}');"
+          style="font-size:0.65rem;padding:0.15rem 0.35rem;background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;flex-shrink:0;transition:all 0.12s"
+          onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✏ editar</button>
+        <button title="Quitar etiquetas (vuelve a Sin Etiqueta)" onclick="clearArtistLabels('${a.id}','${a.name.replace(/'/g,"\\'")}');"
+          style="font-size:0.65rem;padding:0.15rem 0.35rem;background:none;border:1px solid rgba(248,113,113,0.3);border-radius:4px;color:var(--red);cursor:pointer;flex-shrink:0;opacity:0.7;transition:all 0.12s"
+          onmouseover="this.style.opacity='1';this.style.borderColor='var(--red)'"
+          onmouseout="this.style.opacity='0.7';this.style.borderColor='rgba(248,113,113,0.3)'">✕</button>`;
+      tagsL.appendChild(row);
+    });
+    wrapL.appendChild(hdrL);
+    wrapL.appendChild(tagsL);
+    container.appendChild(wrapL);
+  }
+
   updateGenreCount();
   saveSessionConfig();
+}
+
+function clearArtistLabels(artistId, artistName) {
+  if (!confirm(`¿Quitar todas las etiquetas de "${artistName}"?\n\nVolverá a aparecer en "Sin Etiqueta".`)) return;
+  delete S.userLabels[artistId];
+  saveUserLabels_store();
+  window._untaggedExpanded = true;
+  window._labeledExpanded = true;
+  renderGenreGroups(); updatePoolCount();
+  toast(`↩ ${artistName} volvió a Sin Etiqueta`, 'ok', 2500);
 }
 
 function buildGroupEl(grp) {
@@ -2904,60 +2949,85 @@ async function startSerendipiaMode() {
 
 async function pickSerendipiaTrack() {
   const country = S.user?.country || 'US';
-  const knownUris = new Set(S.trackPool.map(t => t.uri));
+  const recentUris = new Set(S.playHistory.slice(-10).map(t => t.uri));
+  const poolUris = new Set(S.trackPool.map(t => t.uri));
 
-  // Strategy 1: Recommendations with single random artist seed (most reliable)
+  // ── Strategy 1: Artist → albums → tracks (100% non-deprecated, reliable) ──────
+  // Picks a random user artist, then a random album of theirs (not in their usual pool)
   if (S.topArtists.length) {
     try {
       const shuffled = [...S.topArtists].sort(() => Math.random() - 0.5);
-      const seed = shuffled[0].id;
-      const energy = (Math.random() * 0.7 + 0.15).toFixed(2);
-      const valence = (Math.random() * 0.7 + 0.15).toFixed(2);
-      const data = await api(`/recommendations?seed_artists=${seed}&limit=20&market=${country}&target_energy=${energy}&target_valence=${valence}&min_popularity=10`);
-      const tracks = (data?.tracks || []).filter(t => t?.uri);
-      if (tracks.length) {
-        const novel = tracks.filter(t => !knownUris.has(t.uri));
-        const pick = (novel.length ? novel : tracks)[rand(novel.length || tracks.length)];
-        if (pick) { const obj = await serendipiaTrackObj(pick); if (obj) return obj; }
+      for (const artist of shuffled.slice(0, 5)) {
+        const albumsData = await api(`/artists/${artist.id}/albums?limit=20&include_groups=album,single&market=${country}`);
+        const albums = (albumsData?.items || []).filter(a => a?.id);
+        if (!albums.length) continue;
+        const album = albums[rand(albums.length)];
+        const tracksData = await api(`/albums/${album.id}/tracks?limit=20`);
+        const tracks = (tracksData?.items || []).filter(t => t?.uri && !recentUris.has(t.uri));
+        if (tracks.length) {
+          // prefer tracks NOT in the user's usual pool
+          const novel = tracks.filter(t => !poolUris.has(t.uri));
+          const pick = (novel.length ? novel : tracks)[rand(novel.length || tracks.length)];
+          pick.album = { images: album.images || [], name: album.name || '' };
+          const obj = await serendipiaTrackObj(pick);
+          if (obj?.uri) return obj;
+        }
       }
-    } catch {}
+    } catch (e) { console.warn('[Serendipia S1]', e?.message); }
   }
 
-  // Strategy 2: New releases
+  // ── Strategy 2: Search with random keyword (non-deprecated) ──────────────────
+  try {
+    const keywords = ['jazz', 'soul', 'ambient', 'blues', 'bossa nova', 'reggae', 'funk', 'afrobeat', 'flamenco', 'tango', 'indie folk', 'classical guitar'];
+    const kw = keywords[rand(keywords.length)];
+    const offset = rand(30);
+    const data = await api(`/search?q=${encodeURIComponent(kw)}&type=track&limit=20&market=${country}&offset=${offset}`);
+    const tracks = (data?.tracks?.items || []).filter(t => t?.uri && !recentUris.has(t.uri));
+    if (tracks.length) {
+      const novel = tracks.filter(t => !poolUris.has(t.uri));
+      const pick = (novel.length ? novel : tracks)[rand(novel.length || tracks.length)];
+      const obj = await serendipiaTrackObj(pick);
+      if (obj?.uri) return obj;
+    }
+  } catch (e) { console.warn('[Serendipia S2]', e?.message); }
+
+  // ── Strategy 3: New releases (works for Premium dev apps) ────────────────────
   try {
     const nr = await api(`/browse/new-releases?limit=20&country=${country}`);
     const albums = (nr?.albums?.items || []).filter(Boolean);
     if (albums.length) {
       const album = albums[rand(albums.length)];
       const albumTracks = await api(`/albums/${album.id}/tracks?limit=20`);
-      const tracks = (albumTracks?.items || []).filter(t => t?.uri);
+      const tracks = (albumTracks?.items || []).filter(t => t?.uri && !recentUris.has(t.uri));
       if (tracks.length) {
         const pick = tracks[rand(tracks.length)];
         pick.album = { images: album.images || [], name: album.name || '' };
-        const obj = await serendipiaTrackObj(pick); if (obj) return obj;
+        const obj = await serendipiaTrackObj(pick);
+        if (obj?.uri) return obj;
       }
     }
-  } catch {}
+  } catch (e) { console.warn('[Serendipia S3]', e?.message); }
 
-  // Strategy 3: Simple search with random genre keyword
-  try {
-    const keywords = ['jazz', 'soul', 'ambient', 'folk indie', 'blues', 'bossa nova', 'afrobeat', 'reggae', 'funk', 'world music', 'flamenco', 'tango'];
-    const kw = keywords[rand(keywords.length)];
-    const data = await api(`/search?q=${encodeURIComponent(kw)}&type=track&limit=20&market=${country}&offset=${rand(40)}`);
-    const tracks = (data?.tracks?.items || []).filter(t => t?.uri);
-    if (tracks.length) { const obj = await serendipiaTrackObj(tracks[rand(tracks.length)]); if (obj) return obj; }
-  } catch {}
-
-  // Strategy 4: Recommendations from a random top track seed
-  if (S.topTracks.length) {
-    try {
-      const seed = S.topTracks[rand(Math.min(S.topTracks.length, 20))];
-      const data = await api(`/recommendations?seed_tracks=${seed.id}&limit=20&market=${country}&min_popularity=5`);
-      const tracks = (data?.tracks || []).filter(t => t?.uri);
-      if (tracks.length) { const obj = await serendipiaTrackObj(tracks[rand(tracks.length)]); if (obj) return obj; }
-    } catch {}
+  // ── Guaranteed fallback: in-memory top tracks (no API needed, never fails) ───
+  // Picks a track not recently played — always works even if all APIs fail
+  const pool = [...(S.topTracksLong || []), ...S.topTracks].filter(t => t?.uri && !recentUris.has(t.uri));
+  if (pool.length) {
+    const t = pool[rand(pool.length)];
+    const artistId = t.artists?.[0]?.id || t.id;
+    console.warn('[Serendipia] using in-memory fallback track:', t.name);
+    return {
+      uri: t.uri, name: t.name || '?',
+      artist: t.artists?.map(a => a.name).join(', ') || t.name || '',
+      artistId,
+      albumArt: t.album?.images?.[0]?.url || '',
+      genres: S.artistGenres[artistId] || [],
+      duration: t.duration_ms || 0,
+      popularity: t.popularity || 50,
+      _serendipia: true,
+    };
   }
 
+  console.error('[Serendipia] All strategies failed. topArtists:', S.topArtists.length, 'topTracks:', S.topTracks.length);
   return null;
 }
 
