@@ -3027,14 +3027,8 @@ async function startSerendipiaMode() {
   $('live-text').innerHTML = '🎲 Buscando territorio desconocido...';
   $('np-label').className = 'np-label on'; $('np-label').textContent = '🎲 SERENDIPIA';
 
-  // 1. Activate audio context (browser autoplay policy unlock)
+  // 1. Activate audio context (browser autoplay policy unlock) — no API call
   try { if (typeof S.player?.activateElement === 'function') await S.player.activateElement(); } catch {}
-
-  // 2. Transfer playback to this device so REST play commands work
-  try {
-    await api('/me/player', { method: 'PUT', body: JSON.stringify({ device_ids: [S.deviceId], play: false }) });
-    await sleep(300);
-  } catch {}
 
   // 3. Pick first track
   $('live-text').innerHTML = '🎲 Buscando canción...';
@@ -3066,26 +3060,21 @@ async function startSerendipiaMode() {
     } catch { $('live-text').innerHTML = '🎲 Modo Serendipia — Territorio desconocido'; }
   }
 
-  // 6. Pre-queue in background — don't block
+  // 6. Pre-queue in background — stagger calls to avoid rate-limiting
   (async () => {
     for (let i = 0; i < 4; i++) {
+      await sleep(600); // space out: ~600ms between searches
+      if (!S.djRunning) break;
       const t = await pickSerendipiaTrack();
       if (t && S.djRunning) { S.upcoming.push(t); renderQueue(); }
     }
   })();
 }
 
-// Build a serendipia track object WITHOUT extra API calls — fire-and-forget for genres/features
+// Build a serendipia track object — no extra API calls (genres/features not needed for Serendipia)
 function _serendipiaTrack(t) {
   const artistId = t.artists?.[0]?.id;
-  const tid = t.id || t.uri?.split(':')?.[2];
-  // Enrich in background — don't block
-  if (artistId && !S.artistGenres[artistId]) {
-    api(`/artists/${artistId}`).then(d => { if (d?.genres?.length) S.artistGenres[artistId] = d.genres; }).catch(() => {});
-  }
-  if (tid && !S.audioFeatures[tid]) {
-    getAudioFeatures(tid).then(af => { if (af) S.audioFeatures[tid] = af; }).catch(() => {});
-  }
+  // Use already-cached genres if available — do NOT fire new API calls to avoid rate limits
   return {
     uri: t.uri, name: t.name || '?',
     artist: t.artists?.map(a => a.name).join(', ') || '',
@@ -3199,10 +3188,15 @@ async function poll() {
     if (!next) next = S.mode === 'serendipia' ? await pickSerendipiaTrack() : await pickByMode();
     if (next) {
       await queueUri(next.uri);
-      // Refill upcoming with mode-appropriate track
-      const fill = S.mode === 'serendipia' ? await pickSerendipiaTrack() : pickFromPool();
-      if (fill) S.upcoming.push(fill);
       renderQueue();
+      // Refill upcoming in background — avoids back-to-back API calls in Serendipia mode
+      if (S.mode === 'serendipia') {
+        pickSerendipiaTrack().then(t => { if (t && S.djRunning) { S.upcoming.push(t); renderQueue(); } });
+      } else {
+        const fill = pickFromPool();
+        if (fill) S.upcoming.push(fill);
+        renderQueue();
+      }
     }
   }
 }
