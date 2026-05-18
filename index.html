@@ -517,6 +517,51 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
 .toast.ok { border-color: var(--green); color: var(--green); }
 .toast.err { border-color: var(--red); color: var(--red); }
 
+/* ── TUTORIAL ── */
+.tut-overlay {
+  position: fixed; inset: 0; z-index: 10100;
+  background: rgba(0,0,0,0.55); pointer-events: none;
+}
+.tut-card {
+  position: fixed; z-index: 10200;
+  background: var(--surface); border: 1px solid var(--accent);
+  border-radius: 14px; padding: 1.25rem 1.4rem 1rem;
+  max-width: 300px; min-width: 240px;
+  box-shadow: 0 0 0 1px rgba(168,85,247,0.15), 0 20px 60px rgba(0,0,0,0.7), 0 0 30px rgba(168,85,247,0.15);
+  pointer-events: auto;
+}
+.tut-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--cyan));
+  border-radius: 14px 14px 0 0;
+}
+.tut-step { font-family:'Space Mono',monospace; font-size:0.52rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.5rem; }
+.tut-title { font-size:0.95rem; font-weight:700; margin-bottom:0.55rem; line-height:1.2; }
+.tut-title em { color:var(--accent); font-style:normal; }
+.tut-text { font-family:'Space Mono',monospace; font-size:0.66rem; color:rgba(232,232,248,0.8); line-height:1.7; margin-bottom:1rem; }
+.tut-text strong { color:var(--text); }
+.tut-text .tip { display:block; margin-top:0.4rem; color:var(--cyan); font-size:0.6rem; }
+.tut-actions { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
+.tut-dots { display:flex; gap:0.3rem; align-items:center; }
+.tut-dot { width:6px; height:6px; border-radius:50%; background:var(--border); transition:all 0.2s; }
+.tut-dot.active { background:var(--accent); width:18px; border-radius:3px; }
+.tut-btn { font-family:'Space Mono',monospace; font-size:0.65rem; padding:0.45rem 0.85rem; border-radius:7px; cursor:pointer; transition:all 0.15s; border:none; }
+.tut-btn-next { background:var(--accent); color:#fff; }
+.tut-btn-next:hover { background:#9333ea; }
+.tut-btn-skip { background:none; color:var(--muted); border:1px solid var(--border) !important; }
+.tut-btn-skip:hover { color:var(--text); border-color:var(--muted) !important; }
+.tut-highlight { outline: 2px solid var(--accent) !important; outline-offset: 3px !important; border-radius: 8px; box-shadow: 0 0 0 4px rgba(168,85,247,0.18), 0 0 20px rgba(168,85,247,0.2) !important; transition: all 0.3s; z-index: 10150 !important; position: relative !important; }
+
+/* ── MODE CHIP SUBTITLES (from tutorial analysis) ── */
+.mode-chip-sub { display:block; font-size:0.42rem; color:var(--muted); margin-top:0.15rem; line-height:1.2; letter-spacing:0.03em; opacity:0.8; }
+.mode-chip.on .mode-chip-sub { color:rgba(232,232,248,0.6); }
+.mode-chip.serendipia .mode-chip-sub { color:rgba(248,113,113,0.65); }
+
+/* ── BLOCK HEADER EXPAND HINT (from tutorial analysis) ── */
+.group-chevron { font-size:0.6rem; color:var(--muted); margin-left:auto; transition:transform 0.2s; flex-shrink:0; padding-right:0.2rem; }
+.group-header.expanded .group-chevron { transform:rotate(180deg); }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -641,6 +686,7 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
     <div class="hdr-right">
       <img class="hdr-avatar" id="hdr-avatar" src="" alt="" style="display:none">
       <span class="hdr-name" id="hdr-name"></span>
+      <button class="btn-sm" onclick="startTutorial()" title="¿Cómo funciona DJ Claudio?">? Guía</button>
       <button class="btn-sm" onclick="logout()">Salir</button>
     </div>
   </header>
@@ -679,19 +725,22 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
           <div class="dj-label" id="dj-label">INICIAR DJ</div>
           <div class="pool-count"><span id="pool-num">0</span> tracks</div>
           <!-- Mode chips compact -->
-          <div class="mode-chips" style="margin-top:0.5rem">
-            <div class="mode-chip on" data-mode="mix" onclick="setMode('mix')" title="Mezcla Total">
+          <div class="mode-chips" id="mode-chips" style="margin-top:0.5rem">
+            <div class="mode-chip on" data-mode="mix" onclick="setMode('mix')" title="Mezcla tus géneros activos con IA">
               <span class="mode-chip-icon">🎛️</span> Mix
+              <span class="mode-chip-sub">tus géneros</span>
             </div>
-            <div class="mode-chip" data-mode="new" onclick="setMode('new')" title="Lanzamientos">
+            <div class="mode-chip" data-mode="new" onclick="setMode('new')" title="Prioriza lanzamientos recientes en Spotify">
               <span class="mode-chip-icon">🆕</span> New
+              <span class="mode-chip-sub">lanzamientos</span>
             </div>
-            <div class="mode-chip" data-mode="discovery" onclick="setMode('discovery')" title="Descubrimiento">
+            <div class="mode-chip" data-mode="discovery" onclick="setMode('discovery')" title="Descubre artistas similares que no conoces">
               <span class="mode-chip-icon">🔭</span> Exp
+              <span class="mode-chip-sub">descubrimiento</span>
             </div>
             <div class="mode-chip serendipia" data-mode="serendipia" onclick="activateSerendipia()" title="Música completamente nueva · No basada en tus gustos">
               <span class="mode-chip-icon">🎲</span> Serendipia
-              <span class="serendipia-warn">⚠ Territorio desconocido</span>
+              <span class="mode-chip-sub serendipia-warn">fuera de tu zona</span>
             </div>
           </div>
           <!-- Quick actions -->
@@ -2302,6 +2351,7 @@ async function loadData() {
   await sleep(400);
   renderApp();
   showScreen('app-screen');
+  maybeShowTutorial();
   // Background tasks (don't block UI)
   loadUserPlaylists().catch(() => {});
   setTimeout(() => classifyUntaggedInBackground().catch(() => {}), 3000);
@@ -2532,10 +2582,11 @@ function buildGroupEl(grp) {
   const hdr = document.createElement('div');
   hdr.className = 'group-header' + (activeInGrp > 0 ? ' active-block' : '');
   hdr.innerHTML = `
-    <div class="group-led ${ledState}" id="gt-${grp.id}"></div>
+    <div class="group-led ${ledState}" id="gt-${grp.id}" title="Activar / desactivar bloque completo"></div>
     <span class="group-icon">${grp.icon || '🎵'}</span>
     <span class="group-name">${grp.nombre}</span>
-    <span class="group-count">${activeInGrp}/${totalInGrp}</span>`;
+    <span class="group-count">${activeInGrp}/${totalInGrp}</span>
+    <span class="group-chevron" title="Ver géneros del bloque">▾</span>`;
 
   // Click LED = toggle entire group
   hdr.querySelector('.group-led').onclick = e => { e.stopPropagation(); toggleGroup(grp); };
@@ -2544,6 +2595,7 @@ function buildGroupEl(grp) {
   hdr.onclick = (e) => {
     if (e.target.classList.contains('group-led') || e.target.classList.contains('group-edit-btn') || e.target.closest('.group-edit-btn')) return;
     expanded = !expanded;
+    hdr.classList.toggle('expanded', expanded);
     tagsRow.style.display = expanded ? '' : 'none';
   };
 
@@ -2774,16 +2826,40 @@ function updateGenreCount() {
 }
 
 function setMode(mode) {
+  const wasSerendipia = S.mode === 'serendipia';
   S.mode = mode;
-  // Support both old .mode-card and new .mode-chip
   document.querySelectorAll('.mode-card, .mode-chip').forEach(c => c.classList.toggle('on', c.dataset.mode === mode));
+
+  // Leaving Serendipia → restore saved genres and reset queue
+  if (wasSerendipia && mode !== 'serendipia') {
+    if (S._preSerendipiaGenres?.size) {
+      S.activeGenres = new Set(S._preSerendipiaGenres);
+      toast(`↩ Géneros restaurados (${S.activeGenres.size} activos)`, 'ok', 2500);
+    }
+    S._preSerendipiaGenres = null;
+    renderGenreGroups();
+    updatePoolCount();
+    // If DJ is running, clear queue so next picks come from restored genres
+    if (S.djRunning) {
+      S.upcoming = [];
+      S.lastPreQueued = null;
+      // Pre-fill new queue from restored pool
+      setTimeout(async () => {
+        for (let i = 0; i < 4; i++) { const t = await pickByMode(); if (t) S.upcoming.push(t); }
+        renderQueue();
+      }, 0);
+      toast(`↩ Cola reiniciada con géneros guardados`, 'ok', 3000);
+    }
+  }
 }
 
 function activateSerendipia() {
   const confirmed = confirm('🎲 Modo SERENDIPIA\n\nVas a escuchar música completamente nueva, no basada en tus gustos. Todos los bloques se desactivarán.\n\nPuedes etiquetar y "hacer tuyas" estas canciones al escucharlas.\n\n¿Entras en territorio desconocido?');
   if (!confirmed) return;
+  // Save current genre state so we can restore it when leaving Serendipia
+  S._preSerendipiaGenres = new Set(S.activeGenres);
   S.activeGenres.clear();
-  setMode('serendipia');
+  setMode('serendipia');   // Note: setMode won't restore (wasSerendipia is false before this call)
   renderGenreGroups();
   updatePoolCount();
   if (!S.deviceId) {
@@ -2791,8 +2867,12 @@ function activateSerendipia() {
     return;
   }
   if (S.djRunning) {
-    // Already running — just switch mode, next pick will be serendipia
-    toast('🎲 Serendipia activado · Próxima canción será nueva', '', 3000);
+    // Mid-session: reset queue completely and immediately start serendipia playback
+    S.upcoming = [];
+    S.lastPreQueued = null;
+    if (S.pollTimer) { clearInterval(S.pollTimer); S.pollTimer = null; }
+    toast('🎲 Reiniciando en Serendipia...', '', 1800);
+    startSerendipiaMode();
     return;
   }
   toast('🎲 Iniciando Serendipia...', '', 2000);
@@ -3536,6 +3616,165 @@ async function init() {
 }
 
 init();
+
+// ══════════════════════════════════════════════════════════
+//  TUTORIAL SYSTEM
+// ══════════════════════════════════════════════════════════
+const TUT_STEPS = [
+  {
+    target: null, // center of screen
+    title: '¡Bienvenido a <em>DJ Claudio</em>!',
+    text: 'Tu DJ personal con IA. Analiza tus <strong>gustos de Spotify</strong> y genera una cola infinita personalizada que evoluciona con cada canción.\n\nEsta guía rápida te explica los elementos clave.',
+    tip: null,
+  },
+  {
+    target: '#genre-groups',
+    title: '<em>Bloques</em> de Géneros',
+    text: 'Cada bloque agrupa géneros musicales. El <strong>switch LED</strong> a la izquierda activa o desactiva todo el bloque de un toque.\n\nSolo suenan canciones de los géneros activos.',
+    tip: '▾ Toca el nombre del bloque para ver y gestionar géneros individuales. Puedes arrastrar géneros entre bloques.',
+  },
+  {
+    target: '.command-center',
+    title: 'Control de <em>Estado de Ánimo</em>',
+    text: 'Los sliders de <strong>Energía</strong> (izquierda) y <strong>Vibra</strong> (derecha) filtran canciones según sus características de audio analizadas por Spotify.\n\nDesliza hacia arriba para música más intensa o alegre.',
+    tip: '💡 El número % fija el máximo. Arrastra el slider izquierdo para establecer un mínimo.',
+  },
+  {
+    target: '#dj-btn',
+    title: 'El Botón <em>DJ</em>',
+    text: 'Pulsa <strong>▶</strong> para iniciar la cola infinita. El DJ elige la siguiente canción antes de que acabe la actual, considerando:\n• Géneros activos\n• Tu historial de likes/skips\n• Coherencia de energía\n• Canciones recientes (penalización 72h)',
+    tip: '⚡ Las canciones skipeadas se penalizan. Las canciones likeadas mejoran ese género.',
+  },
+  {
+    target: '#mode-chips',
+    title: 'Modos de <em>Reproducción</em>',
+    text: '<strong>Mix</strong> — mezcla inteligente de tus géneros activos\n<strong>New</strong> — prioriza lanzamientos recientes\n<strong>Exp</strong> — descubre artistas similares\n<strong>Serendipia</strong> — música completamente fuera de tu zona de confort',
+    tip: '🎲 Serendipia guarda tus géneros activos y los restaura cuando vuelvas a Mix/New/Exp.',
+  },
+  {
+    target: '#btn-label-track',
+    title: '<em>Etiquetas</em> Personales',
+    text: 'Con ✏ puedes etiquetar la canción actual y su artista. Las etiquetas crean <strong>bloques personales</strong> y ayudan al DJ a priorizar ese tipo de música.\n\nLos artistas sin etiqueta aparecen en "Sin Etiqueta" — etiquétalos para que el DJ los incluya.',
+    tip: '🏷 Crea bloques personalizados (+ Crear bloque) para agrupar géneros a tu gusto.',
+  },
+  {
+    target: '.dj-live-bar',
+    title: 'Barra de <em>Estado</em> y Vetos',
+    text: 'Con <strong>⋮</strong> puedes vetar artistas o canciones:\n• "No más hoy" — veto temporal\n• "Nunca más" — veto permanente\n\nCuando el DJ está activo, aparece <strong>"evitando X tracks"</strong> — toca ese texto para ver y liberar canciones penalizadas.',
+    tip: '⏳ La penalización de 72h reduce la probabilidad de re-escuchar canciones recientes.',
+  },
+  {
+    target: '.jogwheel-wrap',
+    title: 'El <em>Platillo</em> DJ',
+    text: 'El platillo gira cuando hay música reproduciéndose. El álbum de la canción actual aparece en el centro.\n\nUsa los botones de control debajo para <strong>play/pausa, anterior, siguiente, volumen y shuffle</strong>.',
+    tip: '✨ ¡Ya estás listo! Activa algunos bloques de géneros y pulsa ▶ para empezar.',
+  },
+];
+
+let _tutStep = 0;
+let _tutCard = null;
+let _tutOverlay = null;
+let _tutPrevHighlight = null;
+
+function startTutorial() {
+  _tutStep = 0;
+  _buildTutDOM();
+  showTutStep(0);
+}
+
+function _buildTutDOM() {
+  // Remove existing
+  document.getElementById('tut-overlay')?.remove();
+  document.getElementById('tut-card')?.remove();
+
+  _tutOverlay = document.createElement('div');
+  _tutOverlay.id = 'tut-overlay';
+  _tutOverlay.className = 'tut-overlay';
+  _tutOverlay.onclick = () => advanceTut();
+  document.body.appendChild(_tutOverlay);
+
+  _tutCard = document.createElement('div');
+  _tutCard.id = 'tut-card';
+  _tutCard.className = 'tut-card';
+  document.body.appendChild(_tutCard);
+}
+
+function showTutStep(idx) {
+  if (idx >= TUT_STEPS.length) { closeTutorial(); return; }
+  _tutStep = idx;
+  const step = TUT_STEPS[idx];
+
+  // Remove previous highlight
+  _tutPrevHighlight?.classList.remove('tut-highlight');
+
+  // Highlight target
+  let targetEl = null;
+  if (step.target) {
+    targetEl = document.querySelector(step.target);
+    if (targetEl) {
+      targetEl.classList.add('tut-highlight');
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+  _tutPrevHighlight = targetEl;
+
+  // Position card
+  const isLast = idx === TUT_STEPS.length - 1;
+  let cardStyle = '';
+  if (!targetEl) {
+    cardStyle = 'left:50%;top:50%;transform:translate(-50%,-50%)';
+  } else {
+    const r = targetEl.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - r.bottom;
+    const spaceRight = window.innerWidth - r.right;
+    if (spaceBelow > 180) {
+      cardStyle = `left:${Math.min(r.left, window.innerWidth - 320)}px;top:${r.bottom + 12}px`;
+    } else if (r.top > 200) {
+      cardStyle = `left:${Math.min(r.left, window.innerWidth - 320)}px;top:${r.top - 12}px;transform:translateY(-100%)`;
+    } else {
+      cardStyle = `left:${Math.min(spaceRight > 320 ? r.right + 12 : r.left - 312, window.innerWidth - 320)}px;top:${Math.max(r.top, 10)}px`;
+    }
+  }
+
+  // Build dots
+  const dots = TUT_STEPS.map((_, i) =>
+    `<div class="tut-dot${i === idx ? ' active' : ''}" onclick="showTutStep(${i})"></div>`
+  ).join('');
+
+  _tutCard.style.cssText = cardStyle;
+  _tutCard.innerHTML = `
+    <div class="tut-step">Paso ${idx + 1} / ${TUT_STEPS.length}</div>
+    <div class="tut-title">${step.title}</div>
+    <div class="tut-text">${step.text.replace(/\n/g, '<br>')}${step.tip ? `<span class="tip">${step.tip}</span>` : ''}</div>
+    <div class="tut-actions">
+      <div class="tut-dots">${dots}</div>
+      <div style="display:flex;gap:0.4rem">
+        <button class="tut-btn tut-btn-skip" onclick="closeTutorial()">✕ Saltar</button>
+        <button class="tut-btn tut-btn-next" onclick="${isLast ? 'closeTutorial()' : `showTutStep(${idx + 1})`}">
+          ${isLast ? '✓ ¡Entendido!' : 'Siguiente →'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function advanceTut() {
+  if (_tutStep < TUT_STEPS.length - 1) showTutStep(_tutStep + 1);
+  else closeTutorial();
+}
+
+function closeTutorial() {
+  _tutPrevHighlight?.classList.remove('tut-highlight');
+  document.getElementById('tut-overlay')?.remove();
+  document.getElementById('tut-card')?.remove();
+  _tutCard = null; _tutOverlay = null; _tutPrevHighlight = null;
+  localStorage.setItem('dj_tutorial_done', '1');
+}
+
+function maybeShowTutorial() {
+  if (!localStorage.getItem('dj_tutorial_done')) {
+    setTimeout(startTutorial, 1200); // slight delay after app loads
+  }
+}
 </script>
 </body>
 </html>
