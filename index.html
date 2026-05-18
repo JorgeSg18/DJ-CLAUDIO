@@ -382,23 +382,25 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
 .user-labels-block .gtoggle.on { background: #0891b2 !important; }
 .unlabeled-block .group-name { color: var(--muted); }
 
-/* ── CUSTOM USER BLOCKS ── */
+/* ── CUSTOM USER BLOCKS (neon blue) ── */
+:root { --neon: #00c8ff; --neon-dim: rgba(0,200,255,0.15); --neon-glow: rgba(0,200,255,0.35); }
 .custom-user-block .group-header {
-  border-color: rgba(168,85,247,0.45) !important;
-  background: linear-gradient(135deg, rgba(168,85,247,0.07) 0%, rgba(168,85,247,0.02) 100%) !important;
-  box-shadow: inset 3px 0 0 rgba(168,85,247,0.5);
+  border-color: rgba(0,200,255,0.5) !important;
+  background: linear-gradient(135deg, rgba(0,200,255,0.07) 0%, rgba(0,200,255,0.02) 100%) !important;
+  box-shadow: inset 3px 0 0 rgba(0,200,255,0.6) !important;
 }
 .custom-user-block .group-header:hover {
-  border-color: rgba(168,85,247,0.7) !important;
-  background: linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(168,85,247,0.04) 100%) !important;
+  border-color: rgba(0,200,255,0.75) !important;
+  background: linear-gradient(135deg, rgba(0,200,255,0.12) 0%, rgba(0,200,255,0.04) 100%) !important;
 }
 .custom-user-block .group-header.active-block {
-  border-color: var(--accent) !important;
-  background: linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(168,85,247,0.06) 100%) !important;
-  box-shadow: inset 3px 0 0 var(--accent), 0 0 12px rgba(168,85,247,0.2) !important;
+  border-color: var(--neon) !important;
+  background: linear-gradient(135deg, rgba(0,200,255,0.16) 0%, rgba(0,200,255,0.05) 100%) !important;
+  box-shadow: inset 3px 0 0 var(--neon), 0 0 14px rgba(0,200,255,0.25) !important;
 }
-.custom-user-block .group-name { color: var(--accent) !important; letter-spacing: 0.03em; }
-.custom-user-block .group-icon::after { content: ' ✦'; font-size: 0.5rem; vertical-align: super; opacity: 0.5; }
+.custom-user-block .group-name { color: var(--neon) !important; text-shadow: 0 0 8px rgba(0,200,255,0.4); }
+.custom-user-block .group-led.on { background: var(--neon) !important; box-shadow: 0 0 6px var(--neon-glow); }
+.custom-user-block .g-tag.on { border-color: var(--neon) !important; background: rgba(0,200,255,0.15) !important; }
 
 /* Drag-over on block header (for collapsed blocks) */
 .group-header.drag-over-hdr {
@@ -944,7 +946,16 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
     </div>
     <div class="form-group">
       <div class="form-label">Ícono <span class="opt">(opcional)</span></div>
-      <input type="text" id="cb-icon" placeholder="🎵" maxlength="4" style="width:70px" autocomplete="off">
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <input type="text" id="cb-icon" placeholder="🎵" maxlength="4" style="width:58px;font-size:1.2rem;text-align:center;padding:0.4rem 0.3rem" autocomplete="off" oninput="$('cb-icon-preview').textContent=this.value||'🎵'">
+        <button type="button" onclick="toggleEmojiPicker()" style="padding:0.35rem 0.65rem;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);cursor:pointer;font-size:0.7rem;font-family:'Space Mono',monospace" title="Abrir selector de emojis">😀 emojis</button>
+        <span id="cb-icon-preview" style="font-size:1.6rem;line-height:1">🎵</span>
+      </div>
+      <!-- Emoji picker panel -->
+      <div id="emoji-picker" style="display:none;margin-top:0.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:0.6rem;max-height:200px;overflow-y:auto">
+        <div style="font-family:'Space Mono',monospace;font-size:0.52rem;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.08em">Elige un ícono</div>
+        <div id="emoji-grid" style="display:flex;flex-wrap:wrap;gap:0.2rem"></div>
+      </div>
     </div>
     <div class="form-group">
       <div class="form-label">Géneros <span class="opt">(uno por línea o separados por coma)</span></div>
@@ -1713,25 +1724,71 @@ function loadCustomBlocks() {
 function saveCustomBlocks() {
   try { localStorage.setItem('dj_custom_blocks', JSON.stringify(S.customBlocks)); } catch {}
 }
+const EMOJI_LIST = [
+  '🎵','🎶','🎸','🎹','🎺','🎻','🥁','🎷','🎤','🎧',
+  '🎼','🎙️','📻','🔊','🎛️','🎚️','🎬','🎭','🌟','⭐',
+  '🔥','❄️','💜','💙','💚','💛','🧡','❤️','🖤','🤍',
+  '🌙','☀️','⚡','🌊','🏔️','🌴','🌺','🌻','🌈','✨',
+  '🦁','🐺','🦊','🦋','🐉','🦅','🐬','🐙','🦄','🦩',
+  '🍀','🌿','🍁','🌾','🎋','🌵','🎄','🌱','🏆','🥇',
+  '💎','👑','🔮','🎯','🎲','🎮','🕹️','🃏','🎪','🎠',
+  '🚀','🛸','🌌','🔭','⚗️','🧲','💡','🔑','🗝️','⚙️',
+  '🎉','🎊','🎁','🪄','🧸','🪅','🎆','🎇','🧨','🪩',
+];
+
+function toggleEmojiPicker() {
+  const picker = $('emoji-picker');
+  if (picker.style.display === 'none') {
+    // Build emoji grid if empty
+    const grid = $('emoji-grid');
+    if (!grid.children.length) {
+      EMOJI_LIST.forEach(em => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = em;
+        btn.title = em;
+        btn.style.cssText = 'font-size:1.3rem;padding:0.2rem;background:none;border:1px solid transparent;border-radius:5px;cursor:pointer;transition:all 0.1s;line-height:1.2;width:36px;height:36px';
+        btn.onmouseover = () => { btn.style.background='var(--surface)'; btn.style.borderColor='var(--border)'; };
+        btn.onmouseout = () => { btn.style.background='none'; btn.style.borderColor='transparent'; };
+        btn.onclick = () => {
+          $('cb-icon').value = em;
+          $('cb-icon-preview').textContent = em;
+          picker.style.display = 'none';
+        };
+        grid.appendChild(btn);
+      });
+    }
+    picker.style.display = '';
+  } else {
+    picker.style.display = 'none';
+  }
+}
+
 function openCreateBlock() {
   $('cb-name').value = '';
   $('cb-icon').value = '';
   $('cb-genres').value = '';
-  // Populate clickable genre chips from allGenres
+  if ($('cb-icon-preview')) $('cb-icon-preview').textContent = '🎵';
+  if ($('emoji-picker')) $('emoji-picker').style.display = 'none';
+  // Populate clickable genre chips — show ALL genres, mark those already in a custom block
   const el = $('cb-available-genres');
   el.innerHTML = '';
-  S.allGenres.slice(0, 60).forEach(g => {
+  const customBlockGenreSet = new Set(S.customBlocks.flatMap(b => b.generos));
+  S.allGenres.slice(0, 80).forEach(g => {
+    const alreadyClaimed = customBlockGenreSet.has(g);
     const chip = document.createElement('span');
-    chip.style.cssText = 'font-family:"Space Mono",monospace;font-size:0.6rem;padding:0.18rem 0.5rem;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:var(--muted);cursor:pointer;user-select:none;transition:all 0.12s';
-    chip.textContent = g;
+    chip.style.cssText = `font-family:"Space Mono",monospace;font-size:0.6rem;padding:0.18rem 0.5rem;border:1px solid var(--border);border-radius:4px;background:var(--surface2);color:${alreadyClaimed ? 'var(--muted)' : 'var(--muted)'};cursor:pointer;user-select:none;transition:all 0.12s;opacity:${alreadyClaimed ? '0.45' : '1'}`;
+    chip.textContent = alreadyClaimed ? g + ' ✓' : g;
+    chip.title = alreadyClaimed ? 'Ya está en otro bloque (se moverá aquí)' : 'Añadir al bloque';
     chip.onclick = () => {
       const cur = $('cb-genres').value.trim();
       const genres = cur ? cur.split(/[\n,]+/).map(s => s.trim()).filter(Boolean) : [];
       if (!genres.includes(g)) {
         $('cb-genres').value = [...genres, g].join('\n');
-        chip.style.borderColor = 'var(--accent)';
-        chip.style.color = 'var(--text)';
-        chip.style.background = 'var(--accent-dim)';
+        chip.style.borderColor = 'var(--neon)';
+        chip.style.color = 'var(--neon)';
+        chip.style.background = 'rgba(0,200,255,0.12)';
+        chip.style.opacity = '1';
       }
     };
     el.appendChild(chip);
@@ -1739,18 +1796,24 @@ function openCreateBlock() {
   openModal('modal-create-block');
   setTimeout(() => $('cb-name').focus(), 100);
 }
+
 function saveCustomBlock() {
   const name = $('cb-name').value.trim();
   if (!name) { toast('El bloque necesita un nombre', 'err'); return; }
-  const icon = $('cb-icon').value.trim() || '🟣';
+  const icon = $('cb-icon').value.trim() || '🔷';
   const genresRaw = $('cb-genres').value;
   const generos = [...new Set(genresRaw.split(/[\n,]+/).map(s => s.trim().toLowerCase()).filter(Boolean))];
   if (!generos.length) { toast('Agrega al menos un género', 'err'); return; }
   const id = 'custom-' + Date.now();
+  // Remove claimed genres from other custom blocks (they move here)
+  S.customBlocks.forEach(blk => {
+    blk.generos = blk.generos.filter(g => !generos.includes(g));
+  });
   S.customBlocks.push({ id, nombre: name, icon, generos });
-  // Add any new genres to allGenres & activeGenres
+  // Add truly new genres to allGenres & activate
   generos.forEach(g => {
-    if (!S.allGenres.includes(g)) { S.allGenres.push(g); S.activeGenres.add(g); }
+    if (!S.allGenres.includes(g)) { S.allGenres.push(g); }
+    S.activeGenres.add(g);
   });
   saveCustomBlocks();
   closeModal('modal-create-block');
@@ -1758,12 +1821,16 @@ function saveCustomBlock() {
   updatePoolCount();
   toast(`✅ Bloque "${name}" creado`, 'ok');
 }
+
 function deleteCustomBlock(id) {
-  if (!confirm('¿Eliminar este bloque personalizado?')) return;
+  const blk = S.customBlocks.find(b => b.id === id);
+  if (!blk) return;
+  if (!confirm(`¿Eliminar el bloque "${blk.icon} ${blk.nombre}"?\n\nSus géneros (${blk.generos.length}) volverán al bloque de sistema correspondiente.`)) return;
   S.customBlocks = S.customBlocks.filter(b => b.id !== id);
   saveCustomBlocks();
   renderGenreGroups();
-  toast('Bloque eliminado', '', 2000);
+  updatePoolCount();
+  toast(`Bloque "${blk.nombre}" eliminado · Géneros restaurados`, '', 2500);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2351,16 +2418,25 @@ function renderGenreGroups() {
     updateGenreCount(); return;
   }
 
+  // Genres owned by custom blocks are excluded from system blocks
+  const customBlockGenreSet = new Set(S.customBlocks.flatMap(b => b.generos));
+
   if (S.genreGroups.length) {
-    S.genreGroups.forEach(grp => container.appendChild(buildGroupEl(grp)));
+    S.genreGroups.forEach(grp => {
+      const filteredGeneros = grp.generos.filter(g => !customBlockGenreSet.has(g));
+      if (!filteredGeneros.length) return; // hide system block if all genres claimed
+      container.appendChild(buildGroupEl({ ...grp, generos: filteredGeneros }));
+    });
   } else {
-    const grp = { id: 'grp-flat', nombre: 'Géneros', icon: '🎵', generos: S.allGenres };
-    container.appendChild(buildGroupEl(grp));
+    const freeGeneros = S.allGenres.filter(g => !customBlockGenreSet.has(g));
+    if (freeGeneros.length) {
+      container.appendChild(buildGroupEl({ id: 'grp-flat', nombre: 'Géneros', icon: '🎵', generos: freeGeneros }));
+    }
   }
 
-  // "Sin Etiqueta" block — artists/tracks with no detected genres
+  // "Sin Etiqueta" block — artists with no detected genres AND no user labels
   const untaggedArtists = S.topArtists
-    .filter(a => !S.artistGenres[a.id]?.length && !(S.userLabels[a.id]?.length))
+    .filter(a => a.id && !S.artistGenres[a.id]?.length && !S.userLabels[a.id]?.length)
     .slice(0, 20);
   if (untaggedArtists.length) {
     const names = untaggedArtists.map(a => a.name);
@@ -2369,17 +2445,27 @@ function renderGenreGroups() {
     let expanded = false;
     const hdr = document.createElement('div');
     hdr.className = 'group-header';
-    hdr.innerHTML = `<span class="group-icon">🏷️</span><span class="group-name">Sin Etiqueta</span><span class="group-count">${untaggedArtists.length} artistas</span>`;
+    hdr.innerHTML = `<span class="group-icon">🏷️</span><span class="group-name" style="color:var(--muted)">Sin Etiqueta</span><span class="group-count">${untaggedArtists.length} artistas</span>`;
     hdr.onclick = () => { expanded = !expanded; tagsRow.style.display = expanded ? '' : 'none'; };
     const tagsRow = document.createElement('div');
     tagsRow.className = 'group-tags';
-    tagsRow.style.display = 'none';
+    // Restore expanded state across re-renders
+    expanded = window._untaggedExpanded || false;
+    tagsRow.style.display = expanded ? '' : 'none';
     untaggedArtists.forEach(a => {
+      if (!a.id) return;
       const tag = document.createElement('div');
-      tag.style.cssText = 'font-family:"Space Mono",monospace;font-size:0.63rem;color:var(--muted);padding:0.2rem 0.6rem;border:1px solid var(--border);border-radius:999px;display:inline-flex;align-items:center;gap:0.3rem;cursor:pointer';
-      tag.innerHTML = `${a.name} <span style="font-size:0.55rem;opacity:0.6" onclick="event.stopPropagation();openLabelForArtist('${a.id}','${a.name.replace(/'/g,"\\'")}')">✏️</span>`;
+      tag.style.cssText = 'font-family:"Space Mono",monospace;font-size:0.63rem;color:var(--muted);padding:0.2rem 0.6rem;border:1px solid var(--border);border-radius:999px;display:inline-flex;align-items:center;gap:0.3rem;cursor:pointer;transition:all 0.12s';
+      tag.onmouseover = () => { tag.style.borderColor='var(--cyan)'; tag.style.color='var(--cyan)'; };
+      tag.onmouseout = () => { tag.style.borderColor='var(--border)'; tag.style.color='var(--muted)'; };
+      tag.innerHTML = `${a.name} <span style="font-size:0.7rem;opacity:0.7;cursor:pointer" onclick="event.stopPropagation();window._untaggedExpanded=true;openLabelForArtist('${a.id}','${a.name.replace(/'/g,"\\'")}')">✏️</span>`;
       tagsRow.appendChild(tag);
     });
+    hdr.onclick = () => {
+      expanded = !expanded;
+      window._untaggedExpanded = expanded;
+      tagsRow.style.display = expanded ? '' : 'none';
+    };
     wrap.appendChild(hdr);
     wrap.appendChild(tagsRow);
     container.appendChild(wrap);
@@ -2474,9 +2560,11 @@ function buildGroupEl(grp) {
       const xBtn = document.createElement('span');
       xBtn.textContent = '✕';
       xBtn.title = 'Eliminar etiqueta';
-      xBtn.style.cssText = 'font-size:0.5rem;opacity:0.5;cursor:pointer;line-height:1;padding:0.05rem 0.1rem;border-radius:2px;flex-shrink:0;transition:opacity 0.12s';
-      xBtn.onmouseover = () => xBtn.style.opacity = '1';
-      xBtn.onmouseout = () => xBtn.style.opacity = '0.5';
+      xBtn.style.cssText = 'font-size:0.62rem;opacity:0;cursor:pointer;line-height:1;padding:0.1rem 0.25rem;margin:-0.1rem -0.15rem -0.1rem 0;border-radius:3px;flex-shrink:0;transition:opacity 0.12s,background 0.12s;min-width:18px;min-height:18px;display:flex;align-items:center;justify-content:center;color:var(--red)';
+      tag.onmouseenter = () => xBtn.style.opacity = '1';
+      tag.onmouseleave = () => xBtn.style.opacity = '0';
+      xBtn.onmouseover = () => { xBtn.style.opacity='1'; xBtn.style.background='rgba(248,113,113,0.2)'; };
+      xBtn.onmouseout = () => { xBtn.style.background='transparent'; };
       xBtn.onclick = e => {
         e.stopPropagation();
         const label = isUserLabel ? g.replace(/^✏ ?/, '') : g;
@@ -2816,52 +2904,59 @@ async function startSerendipiaMode() {
 
 async function pickSerendipiaTrack() {
   const country = S.user?.country || 'US';
-  // Strategy 1: New releases
+  const knownUris = new Set(S.trackPool.map(t => t.uri));
+
+  // Strategy 1: Recommendations with single random artist seed (most reliable)
+  if (S.topArtists.length) {
+    try {
+      const shuffled = [...S.topArtists].sort(() => Math.random() - 0.5);
+      const seed = shuffled[0].id;
+      const energy = (Math.random() * 0.7 + 0.15).toFixed(2);
+      const valence = (Math.random() * 0.7 + 0.15).toFixed(2);
+      const data = await api(`/recommendations?seed_artists=${seed}&limit=20&market=${country}&target_energy=${energy}&target_valence=${valence}&min_popularity=10`);
+      const tracks = (data?.tracks || []).filter(t => t?.uri);
+      if (tracks.length) {
+        const novel = tracks.filter(t => !knownUris.has(t.uri));
+        const pick = (novel.length ? novel : tracks)[rand(novel.length || tracks.length)];
+        if (pick) { const obj = await serendipiaTrackObj(pick); if (obj) return obj; }
+      }
+    } catch {}
+  }
+
+  // Strategy 2: New releases
   try {
     const nr = await api(`/browse/new-releases?limit=20&country=${country}`);
-    const albums = nr?.albums?.items?.filter(Boolean) || [];
+    const albums = (nr?.albums?.items || []).filter(Boolean);
     if (albums.length) {
       const album = albums[rand(albums.length)];
       const albumTracks = await api(`/albums/${album.id}/tracks?limit=20`);
-      const tracks = albumTracks?.items?.filter(t => t?.uri) || [];
+      const tracks = (albumTracks?.items || []).filter(t => t?.uri);
       if (tracks.length) {
         const pick = tracks[rand(tracks.length)];
-        pick.album = pick.album || { images: album.images, name: album.name };
-        if (!pick.album?.images?.length) pick.album.images = album.images;
-        return await serendipiaTrackObj(pick);
+        pick.album = { images: album.images || [], name: album.name || '' };
+        const obj = await serendipiaTrackObj(pick); if (obj) return obj;
       }
     }
   } catch {}
 
-  // Strategy 2: Recommendations seeded with random user artists (different from their regular picks)
+  // Strategy 3: Simple search with random genre keyword
   try {
-    const artistPool = S.topArtists.length ? S.topArtists : [];
-    if (artistPool.length >= 2) {
-      // Shuffle and pick 2 random artists as seeds
-      const shuffled = [...artistPool].sort(() => Math.random() - 0.5);
-      const seeds = shuffled.slice(0, 2).map(a => a.id).join(',');
-      // Use extreme random audio feature values to get unexpected results
-      const energyTarget = (Math.random() * 0.6 + 0.2).toFixed(2);
-      const valenceTarget = (Math.random() * 0.8 + 0.1).toFixed(2);
-      const data = await api(`/recommendations?seed_artists=${seeds}&limit=20&market=${country}&target_energy=${energyTarget}&target_valence=${valenceTarget}&min_popularity=20`);
-      const tracks = data?.tracks?.filter(t => t?.uri) || [];
-      // Pick a track that's NOT in their usual pool (true serendipia)
-      const knownUris = new Set(S.trackPool.map(t => t.uri));
-      const novel = tracks.filter(t => !knownUris.has(t.uri));
-      const pick = (novel.length ? novel : tracks)[rand(novel.length || tracks.length)];
-      if (pick) return await serendipiaTrackObj(pick);
-    }
+    const keywords = ['jazz', 'soul', 'ambient', 'folk indie', 'blues', 'bossa nova', 'afrobeat', 'reggae', 'funk', 'world music', 'flamenco', 'tango'];
+    const kw = keywords[rand(keywords.length)];
+    const data = await api(`/search?q=${encodeURIComponent(kw)}&type=track&limit=20&market=${country}&offset=${rand(40)}`);
+    const tracks = (data?.tracks?.items || []).filter(t => t?.uri);
+    if (tracks.length) { const obj = await serendipiaTrackObj(tracks[rand(tracks.length)]); if (obj) return obj; }
   } catch {}
 
-  // Strategy 3: Search with a random genre keyword
-  try {
-    const seedGenres = ['jazz', 'bossa nova', 'ambient', 'classical', 'world music', 'folk', 'blues', 'soul', 'r&b', 'indie', 'afrobeat', 'flamenco', 'tango', 'reggae', 'funk'];
-    const genre = seedGenres[rand(seedGenres.length)];
-    const year = 2020 + rand(5);
-    const data = await api(`/search?q=genre:"${encodeURIComponent(genre)}" year:${year}&type=track&limit=20&market=${country}`);
-    const tracks = data?.tracks?.items?.filter(t => t?.uri) || [];
-    if (tracks.length) return await serendipiaTrackObj(tracks[rand(tracks.length)]);
-  } catch {}
+  // Strategy 4: Recommendations from a random top track seed
+  if (S.topTracks.length) {
+    try {
+      const seed = S.topTracks[rand(Math.min(S.topTracks.length, 20))];
+      const data = await api(`/recommendations?seed_tracks=${seed.id}&limit=20&market=${country}&min_popularity=5`);
+      const tracks = (data?.tracks || []).filter(t => t?.uri);
+      if (tracks.length) { const obj = await serendipiaTrackObj(tracks[rand(tracks.length)]); if (obj) return obj; }
+    } catch {}
+  }
 
   return null;
 }
