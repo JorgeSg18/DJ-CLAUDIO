@@ -2853,7 +2853,7 @@ function setMode(mode) {
   }
 }
 
-function activateSerendipia() {
+async function activateSerendipia() {
   const confirmed = confirm('🎲 Modo SERENDIPIA\n\nVas a escuchar música completamente nueva, no basada en tus gustos. Todos los bloques se desactivarán.\n\nPuedes etiquetar y "hacer tuyas" estas canciones al escucharlas.\n\n¿Entras en territorio desconocido?');
   if (!confirmed) return;
   // Save current genre state so we can restore it when leaving Serendipia
@@ -2863,8 +2863,20 @@ function activateSerendipia() {
   renderGenreGroups();
   updatePoolCount();
   if (!S.deviceId) {
-    toast('🎲 Serendipia listo · Presiona ▶ para comenzar', '', 3500);
-    return;
+    // Try to reconnect the player and wait briefly for device_id
+    toast('🎲 Conectando reproductor...', '', 4000);
+    try { if (S.player) S.player.connect(); } catch {}
+    let waited = 0;
+    await new Promise(res => {
+      const iv = setInterval(() => {
+        waited += 300;
+        if (S.deviceId || waited >= 6000) { clearInterval(iv); res(); }
+      }, 300);
+    });
+    if (!S.deviceId) {
+      toast('⚠️ Reproductor no disponible. Abre Spotify, reproduce algo y vuelve a intentar.', 'err', 6000);
+      return;
+    }
   }
   if (S.djRunning) {
     // Mid-session: reset queue completely and immediately start serendipia playback
@@ -3011,15 +3023,50 @@ async function startSerendipiaMode() {
   S.djRunning = true; S.playHistory = []; S.upcoming = []; S.lastPreQueued = null;
   $('dj-btn').textContent = '■'; $('dj-btn').classList.add('stop');
   const djLbl = $('dj-label'); if (djLbl) { djLbl.textContent = '🎲 SERENDIPIA ●'; djLbl.classList.add('running'); }
-  $('live-dot').classList.add('on'); $('live-text').innerHTML = '🎲 Modo Serendipia — Territorio desconocido';
+  $('live-dot').classList.add('on');
+  $('live-text').innerHTML = '🎲 Buscando territorio desconocido...';
   $('np-label').className = 'np-label on'; $('np-label').textContent = '🎲 SERENDIPIA';
 
+  // 1. Activate audio context (browser autoplay policy unlock)
+  try { if (typeof S.player?.activateElement === 'function') await S.player.activateElement(); } catch {}
+
+  // 2. Transfer playback to this device so REST play commands work
+  try {
+    await api('/me/player', { method: 'PUT', body: JSON.stringify({ device_ids: [S.deviceId], play: false }) });
+    await sleep(300);
+  } catch {}
+
+  // 3. Pick first track
+  $('live-text').innerHTML = '🎲 Buscando canción...';
+  console.info('[Serendipia] Picking first track...');
   const first = await pickSerendipiaTrack();
-  if (!first) { toast('No se pudo cargar Serendipia. ¿Conexión OK?', 'err'); stopDJ(); return; }
+  if (!first) {
+    console.error('[Serendipia] pickSerendipiaTrack returned null');
+    $('live-text').innerHTML = '🎲 Sin conexión';
+    toast('No se pudo cargar Serendipia. Verifica conexión y vuelve a intentar.', 'err', 5000);
+    stopDJ(); return;
+  }
+  console.info('[Serendipia] First track:', first.name, '-', first.artist);
+
+  // 4. Play
+  $('live-text').innerHTML = '🎲 Iniciando reproducción...';
   await playTrackNow(first);
   S.pollTimer = setInterval(poll, 1000);
 
-  // Pre-queue in background — don't block playback start
+  // 5. Verify after 1.5 s that playback actually started
+  await sleep(1500);
+  if (S.djRunning) {
+    try {
+      const state = await S.player.getCurrentState();
+      if (!state || state.paused) {
+        toast('🎲 Serendipia listo · Si no hay audio, abre Spotify en este dispositivo primero', '', 7000);
+      } else {
+        $('live-text').innerHTML = '🎲 Modo Serendipia — Territorio desconocido';
+      }
+    } catch { $('live-text').innerHTML = '🎲 Modo Serendipia — Territorio desconocido'; }
+  }
+
+  // 6. Pre-queue in background — don't block
   (async () => {
     for (let i = 0; i < 4; i++) {
       const t = await pickSerendipiaTrack();
@@ -3057,6 +3104,7 @@ async function pickSerendipiaTrack() {
   const poolUris = new Set(S.trackPool.map(t => t.uri));
 
   // ── S1: Search — 1 API call, fast, always available ─────────────────────────
+  console.info('[Serendipia] Trying S1: search');
   try {
     const keywords = [
       'jazz night', 'soul groove', 'ambient chill', 'blues guitar', 'bossa nova cafe',
@@ -3065,16 +3113,21 @@ async function pickSerendipiaTrack() {
       'motown hits', 'lo-fi beats', 'smooth jazz', 'cumbia', 'samba',
     ];
     const kw = keywords[rand(keywords.length)];
+    console.info('[Serendipia] Search keyword:', kw);
     const data = await api(`/search?q=${encodeURIComponent(kw)}&type=track&limit=30&market=${country}&offset=${rand(15)}`);
+    console.info('[Serendipia] Search result items:', data?.tracks?.items?.length ?? 'null');
     const tracks = (data?.tracks?.items || []).filter(t => t?.uri && !recentUris.has(t.uri));
     if (tracks.length) {
       const novel = tracks.filter(t => !poolUris.has(t.uri));
       const pick = (novel.length ? novel : tracks)[rand(novel.length || tracks.length)];
+      console.info('[Serendipia] S1 success:', pick.name);
       return _serendipiaTrack(pick);  // synchronous — no extra API calls
     }
+    console.warn('[Serendipia] S1: no usable tracks');
   } catch (e) { console.warn('[Serendipia S1 search]', e?.message); }
 
   // ── S2: Artist album — 2 API calls, 1 random artist ─────────────────────────
+  console.info('[Serendipia] Trying S2: artist album, topArtists:', S.topArtists.length);
   if (S.topArtists.length) {
     try {
       const artist = S.topArtists[rand(Math.min(S.topArtists.length, 20))];
@@ -3088,6 +3141,7 @@ async function pickSerendipiaTrack() {
           const novel = tracks.filter(t => !poolUris.has(t.uri));
           const pick = (novel.length ? novel : tracks)[rand(novel.length || tracks.length)];
           pick.album = { images: album.images || [], name: album.name || '' };
+          console.info('[Serendipia] S2 success:', pick.name);
           return _serendipiaTrack(pick);
         }
       }
@@ -3095,6 +3149,7 @@ async function pickSerendipiaTrack() {
   }
 
   // ── S3: New releases — 2 API calls ───────────────────────────────────────────
+  console.info('[Serendipia] Trying S3: new releases');
   try {
     const nr = await api(`/browse/new-releases?limit=20&country=${country}`);
     const albums = (nr?.albums?.items || []).filter(Boolean);
@@ -3105,19 +3160,30 @@ async function pickSerendipiaTrack() {
       if (tracks.length) {
         const pick = tracks[rand(tracks.length)];
         pick.album = { images: album.images || [], name: album.name || '' };
+        console.info('[Serendipia] S3 success:', pick.name);
         return _serendipiaTrack(pick);
       }
     }
   } catch (e) { console.warn('[Serendipia S3 new-releases]', e?.message); }
 
-  // ── Fallback: in-memory — 0 API calls, NEVER fails ───────────────────────────
+  // ── Fallback A: raw topTracks — 0 API calls ───────────────────────────────────
+  console.warn('[Serendipia] All API strategies failed, using in-memory fallback');
   const memPool = [...(S.topTracksLong || []), ...S.topTracks].filter(t => t?.uri && !recentUris.has(t.uri));
   if (memPool.length) {
-    console.info('[Serendipia] Using in-memory fallback');
-    return _serendipiaTrack(memPool[rand(memPool.length)]);
+    const pick = memPool[rand(memPool.length)];
+    console.info('[Serendipia] FallbackA:', pick.name);
+    return _serendipiaTrack(pick);
   }
 
-  console.error('[Serendipia] All strategies failed — no tracks available');
+  // ── Fallback B: normalized trackPool — absolutely last resort ─────────────────
+  const poolFallback = S.trackPool.filter(t => t?.uri && !recentUris.has(t.uri));
+  if (poolFallback.length) {
+    const pick = poolFallback[rand(poolFallback.length)];
+    console.info('[Serendipia] FallbackB (trackPool):', pick.name);
+    return pick; // already in normalized format
+  }
+
+  console.error('[Serendipia] All strategies + fallbacks failed — no tracks at all');
   return null;
 }
 async function poll() {
@@ -3133,7 +3199,8 @@ async function poll() {
     if (!next) next = S.mode === 'serendipia' ? await pickSerendipiaTrack() : await pickByMode();
     if (next) {
       await queueUri(next.uri);
-      const fill = pickFromPool();
+      // Refill upcoming with mode-appropriate track
+      const fill = S.mode === 'serendipia' ? await pickSerendipiaTrack() : pickFromPool();
       if (fill) S.upcoming.push(fill);
       renderQueue();
     }
