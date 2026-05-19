@@ -2107,8 +2107,10 @@ async function api(path, opts = {}, _retry = 0) {
     logout(); throw new Error('Auth expired');
   }
   if (res.status === 429) {
-    await sleep(parseInt(res.headers.get('Retry-After') || '2') * 1000);
-    return api(path, opts, _retry);
+    if (_retry >= 1) { console.warn('API 429 — demasiados reintentos, omitiendo:', path.split('?')[0]); return null; }
+    const wait = Math.min(parseInt(res.headers.get('Retry-After') || '2') * 1000, 4000);
+    await sleep(wait);
+    return api(path, opts, _retry + 1);
   }
   if (res.status === 204 || res.status === 202) return null;
   if (!res.ok) {
@@ -3022,29 +3024,33 @@ async function startSerendipiaMode() {
   // 1. Activate audio context (browser autoplay policy unlock) — no API call
   try { if (typeof S.player?.activateElement === 'function') await S.player.activateElement(); } catch {}
 
-  // 3. Pick first track
-  $('live-text').innerHTML = '🎲 Buscando canción...';
-  console.info('[Serendipia] Picking first track...');
-  const first = await pickSerendipiaTrack();
+  // 3. First track from in-memory — INSTANT start, no API calls
+  $('live-text').innerHTML = '🎲 Iniciando...';
+  const freshRecent = new Set(); // empty — first track has no history yet
+  const memPool0 = [...(S.topTracksLong || []), ...S.topTracks].filter(t => t?.uri);
+  const poolFall0 = S.trackPool.filter(t => t?.uri);
+  let first = null;
+  if (memPool0.length) {
+    first = _serendipiaTrack(memPool0[rand(memPool0.length)]);
+  } else if (poolFall0.length) {
+    first = poolFall0[rand(poolFall0.length)]; // already normalized
+  }
   if (!first) {
-    console.error('[Serendipia] pickSerendipiaTrack returned null');
-    $('live-text').innerHTML = '🎲 Sin conexión';
-    toast('No se pudo cargar Serendipia. Verifica conexión y vuelve a intentar.', 'err', 5000);
+    $('live-text').innerHTML = '🎲 Sin tracks disponibles';
+    toast('No hay tracks en memoria. Recarga la página.', 'err', 5000);
     stopDJ(); return;
   }
-  console.info('[Serendipia] First track:', first.name, '-', first.artist);
+  console.info('[Serendipia] First track (in-memory):', first.name, '-', first.artist);
 
-  // 4. Play
-  $('live-text').innerHTML = '🎲 Iniciando reproducción...';
+  // 4. Play immediately
   await playTrackNow(first);
   S.pollTimer = setInterval(poll, 1000);
-
   $('live-text').innerHTML = '🎲 Modo Serendipia — Territorio desconocido';
 
-  // 5. Pre-queue in background — stagger calls to avoid rate-limiting
+  // 5. Pre-queue with API in background — stagger to avoid rate-limiting
   (async () => {
     for (let i = 0; i < 4; i++) {
-      await sleep(600); // space out: ~600ms between searches
+      await sleep(800);
       if (!S.djRunning) break;
       const t = await pickSerendipiaTrack();
       if (t && S.djRunning) { S.upcoming.push(t); renderQueue(); }
@@ -3073,35 +3079,30 @@ async function pickSerendipiaTrack() {
   const recentUris = new Set(S.playHistory.slice(-15).map(t => t.uri));
   const poolUris = new Set(S.trackPool.map(t => t.uri));
 
-  // ── S1: Search — 1 API call, fast, always available ─────────────────────────
-  console.info('[Serendipia] Trying S1: search');
+  // ── S1: Search — 1 API call, simple query (no market/offset to avoid 400) ────
   try {
     const keywords = [
       'jazz night', 'soul groove', 'ambient chill', 'blues guitar', 'bossa nova cafe',
-      'reggae roots', 'funk classics', 'afrobeats hits', 'flamenco guitar', 'tango nuevo',
-      'indie folk acoustic', 'classical piano', 'latin jazz', 'deep house', 'world music',
-      'motown hits', 'lo-fi beats', 'smooth jazz', 'cumbia', 'samba',
+      'reggae roots', 'funk classics', 'afrobeats hits', 'flamenco guitar', 'indie folk',
+      'classical piano', 'latin jazz', 'deep house', 'world music', 'motown hits',
+      'lo-fi beats', 'smooth jazz', 'cumbia', 'samba', 'trip hop',
     ];
     const kw = keywords[rand(keywords.length)];
-    console.info('[Serendipia] Search keyword:', kw);
-    const data = await api(`/search?q=${encodeURIComponent(kw)}&type=track&limit=30&market=${country}&offset=${rand(15)}`);
-    console.info('[Serendipia] Search result items:', data?.tracks?.items?.length ?? 'null');
+    const data = await api(`/search?q=${encodeURIComponent(kw)}&type=track&limit=50`);
     const tracks = (data?.tracks?.items || []).filter(t => t?.uri && !recentUris.has(t.uri));
     if (tracks.length) {
       const novel = tracks.filter(t => !poolUris.has(t.uri));
       const pick = (novel.length ? novel : tracks)[rand(novel.length || tracks.length)];
       console.info('[Serendipia] S1 success:', pick.name);
-      return _serendipiaTrack(pick);  // synchronous — no extra API calls
+      return _serendipiaTrack(pick);
     }
-    console.warn('[Serendipia] S1: no usable tracks');
-  } catch (e) { console.warn('[Serendipia S1 search]', e?.message); }
+  } catch (e) { console.warn('[Serendipia S1]', e?.message); }
 
-  // ── S2: Artist album — 2 API calls, 1 random artist ─────────────────────────
-  console.info('[Serendipia] Trying S2: artist album, topArtists:', S.topArtists.length);
+  // ── S2: Artist album — 2 API calls ───────────────────────────────────────────
   if (S.topArtists.length) {
     try {
       const artist = S.topArtists[rand(Math.min(S.topArtists.length, 20))];
-      const albumsData = await api(`/artists/${artist.id}/albums?limit=20&include_groups=album,single&market=${country}`);
+      const albumsData = await api(`/artists/${artist.id}/albums?limit=20&include_groups=album,single`);
       const albums = (albumsData?.items || []).filter(a => a?.id);
       if (albums.length) {
         const album = albums[rand(albums.length)];
@@ -3115,45 +3116,20 @@ async function pickSerendipiaTrack() {
           return _serendipiaTrack(pick);
         }
       }
-    } catch (e) { console.warn('[Serendipia S2 album]', e?.message); }
+    } catch (e) { console.warn('[Serendipia S2]', e?.message); }
   }
 
-  // ── S3: New releases — 2 API calls ───────────────────────────────────────────
-  console.info('[Serendipia] Trying S3: new releases');
-  try {
-    const nr = await api(`/browse/new-releases?limit=20&country=${country}`);
-    const albums = (nr?.albums?.items || []).filter(Boolean);
-    if (albums.length) {
-      const album = albums[rand(albums.length)];
-      const albumTracks = await api(`/albums/${album.id}/tracks?limit=20`);
-      const tracks = (albumTracks?.items || []).filter(t => t?.uri && !recentUris.has(t.uri));
-      if (tracks.length) {
-        const pick = tracks[rand(tracks.length)];
-        pick.album = { images: album.images || [], name: album.name || '' };
-        console.info('[Serendipia] S3 success:', pick.name);
-        return _serendipiaTrack(pick);
-      }
-    }
-  } catch (e) { console.warn('[Serendipia S3 new-releases]', e?.message); }
-
-  // ── Fallback A: raw topTracks — 0 API calls ───────────────────────────────────
-  console.warn('[Serendipia] All API strategies failed, using in-memory fallback');
+  // ── Fallback: in-memory topTracks — 0 API calls ───────────────────────────────
   const memPool = [...(S.topTracksLong || []), ...S.topTracks].filter(t => t?.uri && !recentUris.has(t.uri));
   if (memPool.length) {
     const pick = memPool[rand(memPool.length)];
-    console.info('[Serendipia] FallbackA:', pick.name);
+    console.info('[Serendipia] in-memory fallback:', pick.name);
     return _serendipiaTrack(pick);
   }
-
-  // ── Fallback B: normalized trackPool — absolutely last resort ─────────────────
   const poolFallback = S.trackPool.filter(t => t?.uri && !recentUris.has(t.uri));
-  if (poolFallback.length) {
-    const pick = poolFallback[rand(poolFallback.length)];
-    console.info('[Serendipia] FallbackB (trackPool):', pick.name);
-    return pick; // already in normalized format
-  }
+  if (poolFallback.length) return poolFallback[rand(poolFallback.length)];
 
-  console.error('[Serendipia] All strategies + fallbacks failed — no tracks at all');
+  console.error('[Serendipia] No tracks found anywhere');
   return null;
 }
 async function poll() {
