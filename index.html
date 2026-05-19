@@ -3015,8 +3015,13 @@ async function pickSerendipiaTrack() {
       })));
     }
     if (candidates.length) {
-      const t = candidates[rand(candidates.length)];
+      // Ordenar por popularidad ASC — preferir lo MÁS obscuro
+      candidates.sort((a,b) => (a.popularity ?? 0) - (b.popularity ?? 0));
+      // Tomar uno al azar de los 5 menos populares
+      const pickPool = candidates.slice(0, Math.min(5, candidates.length));
+      const t = pickPool[rand(pickPool.length)];
       const artistId = t.artists?.[0]?.id || null;
+      console.log(`[Serendipia] ▶ ELEGIDO: "${t.name}" - ${t.artists?.[0]?.name} (pop=${t.popularity})`);
       return {
         uri: t.uri,
         name: t.name,
@@ -3082,8 +3087,19 @@ async function startDJ() {
   }
   await playTrackNow(first);
 
-  // In serendipia mode, don't pre-fill queue from known pool
-  if (S.mode !== 'serendipia') {
+  if (S.mode === 'serendipia') {
+    // Pre-cargar 2 unknowns en background para evitar autoplay de Spotify
+    (async () => {
+      for (let i = 0; i < 2; i++) {
+        const t = await pickSerendipiaTrack();
+        if (t && S.djRunning) {
+          S.upcoming.push(t);
+          await queueUri(t.uri);
+          renderQueue();
+        }
+      }
+    })();
+  } else {
     for (let i = 0; i < 4; i++) { const t = pickFromPool(); if (t) S.upcoming.push(t); }
   }
   renderQueue();
