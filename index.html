@@ -2952,16 +2952,16 @@ async function pickSerendipiaTrack() {
     ...S.recentTracks.flatMap(t => t.artists?.map(a => a.name.toLowerCase()) || []),
   ]);
 
-  // Triple filter parametrizado: lo crítico es que el artista sea desconocido
-  // popularityMax se va relajando si no encontramos nada
-  const isUnknown = (t, popularityMax) => {
-    if (!t?.uri || !t?.artists?.length) return false;
-    if (recentUris.has(t.uri) || knownUris.has(t.uri)) return false;
+  // Filtro: lo CRÍTICO es que el artista sea desconocido. Popularity es secundaria.
+  // Default popularity missing → 0 (no asumimos popular si no viene el dato)
+  const isUnknown = (t, popularityMax, debug) => {
+    if (!t?.uri || !t?.artists?.length) { if (debug) debug.noUri++; return false; }
+    if (recentUris.has(t.uri) || knownUris.has(t.uri)) { if (debug) debug.knownUri++; return false; }
     const aid = t.artists[0]?.id;
     const aname = t.artists[0]?.name?.toLowerCase() || '';
-    if (aid && knownArtistIds.has(aid)) return false;
-    if (aname && knownArtistNames.has(aname)) return false;
-    if ((t.popularity ?? 100) > popularityMax) return false;
+    if (aid && knownArtistIds.has(aid)) { if (debug) debug.knownArtistId++; return false; }
+    if (aname && knownArtistNames.has(aname)) { if (debug) debug.knownArtistName++; return false; }
+    if ((t.popularity ?? 0) > popularityMax) { if (debug) debug.tooPopular++; return false; }
     return true;
   };
 
@@ -3005,8 +3005,15 @@ async function pickSerendipiaTrack() {
       ...(r2?.tracks?.items || []),
     ];
 
-    const candidates = all.filter(t => isUnknown(t, popMax));
-    console.log(`[Serendipia] ronda ${attempt+1} kw=${kw1}/${kw2} → ${all.length} tracks, ${candidates.length} pasaron filtro (pop<${popMax})`);
+    const debug = { noUri:0, knownUri:0, knownArtistId:0, knownArtistName:0, tooPopular:0 };
+    const candidates = all.filter(t => isUnknown(t, popMax, debug));
+    console.log(`[Serendipia] ronda ${attempt+1} kw=${kw1}/${kw2} → ${all.length} tracks, ${candidates.length} pasaron (pop<${popMax}). Rechazos:`, debug);
+    if (all.length && !candidates.length && attempt === 0) {
+      // Imprime los primeros 3 tracks para inspección
+      console.log('[Serendipia] ejemplo de tracks rechazados:', all.slice(0,3).map(t => ({
+        name: t?.name, artist: t?.artists?.[0]?.name, popularity: t?.popularity, artistId: t?.artists?.[0]?.id,
+      })));
+    }
     if (candidates.length) {
       const t = candidates[rand(candidates.length)];
       const artistId = t.artists?.[0]?.id || null;
