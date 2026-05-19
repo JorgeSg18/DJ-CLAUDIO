@@ -2969,8 +2969,10 @@ async function pickSerendipiaTrack() {
   const market = S.user?.country || 'US';
   const searchDirect = async (kw) => {
     try {
-      // limit=20 (max permitido por Spotify actualmente; 50 devuelve "Invalid limit")
-      const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(kw)}&type=track&limit=20&market=${market}`;
+      // Spotify rechaza limit=20 y limit=50 con "Invalid limit" — omitimos limit (default = 20)
+      // Construir con URLSearchParams para evitar problemas de ordenamiento/encoding
+      const params = new URLSearchParams({ q: kw, type: 'track', market });
+      const url = `https://api.spotify.com/v1/search?${params.toString()}`;
       const res = await fetch(url, { headers: { 'Authorization': `Bearer ${S.token}` } });
       if (!res.ok) {
         // Log the actual error body once per failure to diagnose
