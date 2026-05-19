@@ -1087,6 +1087,7 @@ const S = {
 
   // Playlists
   userPlaylists: [],
+  _playlistsUnavailable: false, // true when /me/playlists returns 403
 
   // Session
   sessionId: null,
@@ -2110,7 +2111,11 @@ async function api(path, opts = {}, _retry = 0) {
     return api(path, opts, _retry);
   }
   if (res.status === 204 || res.status === 202) return null;
-  if (!res.ok) { console.warn('API', res.status, path); return null; }
+  if (!res.ok) {
+    // 403 = restricted endpoint in dev mode — silent, no console spam
+    if (res.status !== 403) console.warn('API', res.status, path);
+    return null;
+  }
   return res.json().catch(() => null);
 }
 
@@ -2326,34 +2331,21 @@ async function loadData() {
   };
   S.topTracks.forEach(t => addTrack(t, t.artists?.[0]?.id));
   S.recentTracks.forEach(t => addTrack(t, t.artists?.[0]?.id));
-
-  setProgress(66, 'Obteniendo top tracks por artista...');
-  const market = user.country || 'US';
-  const pick30 = S.topArtists.slice(0, 30);
-  let adone = 0;
-  for (let i = 0; i < pick30.length; i += 5) {
-    const batch = pick30.slice(i, i+5);
-    await Promise.all(batch.map(async a => {
-      const data = await api(`/artists/${a.id}/top-tracks?market=${market}`);
-      (data?.tracks || []).forEach(t => addTrack(t, a.id));
-      adone++;
-    }));
-    setProgress(66 + (adone / pick30.length) * 20, `Tracks artistas: ${adone}/${pick30.length}...`);
-  }
+  // Note: /artists/{id}/top-tracks is restricted in Spotify dev mode (403)
+  // Pool is built from topTracks (up to 150) + recentTracks (up to 50)
   S.trackPool = [...trackMap.values()];
 
-  setProgress(87, 'Cargando Mis Likes de Spotify...');
+  setProgress(80, 'Cargando Mis Likes de Spotify...');
   await loadLikedFromSpotify();
 
-  setProgress(92, 'Inicializando reproductor...');
+  setProgress(88, 'Inicializando reproductor...');
   await initPlayer();
   setProgress(100, '¡Listo!');
   await sleep(400);
   renderApp();
   showScreen('app-screen');
   maybeShowTutorial();
-  // Background tasks (don't block UI)
-  loadUserPlaylists().catch(() => {});
+  // Background tasks
   setTimeout(() => classifyUntaggedInBackground().catch(() => {}), 3000);
 }
 
@@ -3047,20 +3039,9 @@ async function startSerendipiaMode() {
   await playTrackNow(first);
   S.pollTimer = setInterval(poll, 1000);
 
-  // 5. Verify after 1.5 s that playback actually started
-  await sleep(1500);
-  if (S.djRunning) {
-    try {
-      const state = await S.player.getCurrentState();
-      if (!state || state.paused) {
-        toast('🎲 Serendipia listo · Si no hay audio, abre Spotify en este dispositivo primero', '', 7000);
-      } else {
-        $('live-text').innerHTML = '🎲 Modo Serendipia — Territorio desconocido';
-      }
-    } catch { $('live-text').innerHTML = '🎲 Modo Serendipia — Territorio desconocido'; }
-  }
+  $('live-text').innerHTML = '🎲 Modo Serendipia — Territorio desconocido';
 
-  // 6. Pre-queue in background — stagger calls to avoid rate-limiting
+  // 5. Pre-queue in background — stagger calls to avoid rate-limiting
   (async () => {
     for (let i = 0; i < 4; i++) {
       await sleep(600); // space out: ~600ms between searches
@@ -3220,9 +3201,7 @@ async function playTrackNow(track) {
     // Update recent genre families for coherence
     const fams = [...getTrackFamilies(track)];
     if (fams.length) S.recentFamilies = [...S.recentFamilies, ...fams].slice(-3);
-    // Fetch audio features asynchronously for next pick
-    const tid2 = trackId(track.uri);
-    if (tid2 && !S.audioFeatures[tid2]) getAudioFeatures(tid2).catch(() => {});
+    // Note: /audio-features is restricted in Spotify dev mode — skip auto-fetch
     renderNowPlaying(track, reason);
     checkIsLiked(trackId(track.uri));
     saveSessionConfig();
@@ -3383,8 +3362,15 @@ function shareTwitter() {
 //  PLAYLIST
 // ══════════════════════════════════════════════════════════
 async function loadUserPlaylists() {
-  const data = await api('/me/playlists?limit=50');
-  S.userPlaylists = data?.items?.filter(p => p) || [];
+  if (S._playlistsUnavailable) return; // 403 already seen — don't retry
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/me/playlists?limit=50`, {
+      headers: { 'Authorization': `Bearer ${S.token}` },
+    });
+    if (res.status === 403) { S._playlistsUnavailable = true; return; } // restricted endpoint
+    const data = res.ok ? await res.json().catch(() => null) : null;
+    S.userPlaylists = data?.items?.filter(p => p) || [];
+  } catch {}
 }
 async function openPlaylist() {
   if (!S.currentTrack) { toast('No hay canción activa', 'err'); return; }
