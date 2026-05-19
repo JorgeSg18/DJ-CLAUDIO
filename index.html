@@ -180,13 +180,6 @@ input.mood-dual-range.mood-max::-webkit-slider-thumb { background: linear-gradie
   box-shadow: 0 0 8px var(--accent-glow);
 }
 .mode-chip-icon { font-size: 0.85rem; }
-.mode-chip.serendipia {
-  border-color: rgba(248,113,113,0.5); color: var(--red);
-  background: rgba(248,113,113,0.06); font-size: 0.6rem; position: relative;
-}
-.mode-chip.serendipia:hover { border-color: var(--red); background: rgba(248,113,113,0.14); box-shadow: 0 0 10px rgba(248,113,113,0.25); }
-.mode-chip.serendipia.on { border-color: var(--red); background: rgba(248,113,113,0.18); color: #fff; box-shadow: 0 0 12px rgba(248,113,113,0.4); }
-.serendipia-warn { font-family: 'Space Mono', monospace; font-size: 0.45rem; color: rgba(248,113,113,0.7); display: block; margin-top: 0.1rem; letter-spacing: 0.05em; }
 
 /* ── GENRE BLOCK BUTTONS ── */
 .blocks-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
@@ -556,7 +549,7 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
 /* ── MODE CHIP SUBTITLES (from tutorial analysis) ── */
 .mode-chip-sub { display:block; font-size:0.42rem; color:var(--muted); margin-top:0.15rem; line-height:1.2; letter-spacing:0.03em; opacity:0.8; }
 .mode-chip.on .mode-chip-sub { color:rgba(232,232,248,0.6); }
-.mode-chip.serendipia .mode-chip-sub { color:rgba(248,113,113,0.65); }
+
 
 /* ── BLOCK HEADER EXPAND HINT (from tutorial analysis) ── */
 .group-chevron { font-size:0.6rem; color:var(--muted); margin-left:auto; transition:transform 0.2s; flex-shrink:0; padding-right:0.2rem; }
@@ -737,10 +730,6 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
             <div class="mode-chip" data-mode="discovery" onclick="setMode('discovery')" title="Descubre artistas similares que no conoces">
               <span class="mode-chip-icon">🔭</span> Exp
               <span class="mode-chip-sub">descubrimiento</span>
-            </div>
-            <div class="mode-chip serendipia" data-mode="serendipia" onclick="activateSerendipia()" title="Música completamente nueva · No basada en tus gustos">
-              <span class="mode-chip-icon">🎲</span> Serendipia
-              <span class="mode-chip-sub serendipia-warn">fuera de tu zona</span>
             </div>
           </div>
           <!-- Quick actions -->
@@ -2820,70 +2809,10 @@ function updateGenreCount() {
 }
 
 function setMode(mode) {
-  const wasSerendipia = S.mode === 'serendipia';
   S.mode = mode;
   document.querySelectorAll('.mode-card, .mode-chip').forEach(c => c.classList.toggle('on', c.dataset.mode === mode));
-
-  // Leaving Serendipia → restore saved genres and reset queue
-  if (wasSerendipia && mode !== 'serendipia') {
-    if (S._preSerendipiaGenres?.size) {
-      S.activeGenres = new Set(S._preSerendipiaGenres);
-      toast(`↩ Géneros restaurados (${S.activeGenres.size} activos)`, 'ok', 2500);
-    }
-    S._preSerendipiaGenres = null;
-    renderGenreGroups();
-    updatePoolCount();
-    // If DJ is running, clear queue so next picks come from restored genres
-    if (S.djRunning) {
-      S.upcoming = [];
-      S.lastPreQueued = null;
-      // Pre-fill new queue from restored pool
-      setTimeout(async () => {
-        for (let i = 0; i < 4; i++) { const t = await pickByMode(); if (t) S.upcoming.push(t); }
-        renderQueue();
-      }, 0);
-      toast(`↩ Cola reiniciada con géneros guardados`, 'ok', 3000);
-    }
-  }
 }
 
-async function activateSerendipia() {
-  const confirmed = confirm('🎲 Modo SERENDIPIA\n\nVas a escuchar música completamente nueva, no basada en tus gustos. Todos los bloques se desactivarán.\n\nPuedes etiquetar y "hacer tuyas" estas canciones al escucharlas.\n\n¿Entras en territorio desconocido?');
-  if (!confirmed) return;
-  // Save current genre state so we can restore it when leaving Serendipia
-  S._preSerendipiaGenres = new Set(S.activeGenres);
-  S.activeGenres.clear();
-  setMode('serendipia');   // Note: setMode won't restore (wasSerendipia is false before this call)
-  renderGenreGroups();
-  updatePoolCount();
-  if (!S.deviceId) {
-    // Try to reconnect the player and wait briefly for device_id
-    toast('🎲 Conectando reproductor...', '', 4000);
-    try { if (S.player) S.player.connect(); } catch {}
-    let waited = 0;
-    await new Promise(res => {
-      const iv = setInterval(() => {
-        waited += 300;
-        if (S.deviceId || waited >= 6000) { clearInterval(iv); res(); }
-      }, 300);
-    });
-    if (!S.deviceId) {
-      toast('⚠️ Reproductor no disponible. Abre Spotify, reproduce algo y vuelve a intentar.', 'err', 6000);
-      return;
-    }
-  }
-  if (S.djRunning) {
-    // Mid-session: reset queue completely and immediately start serendipia playback
-    S.upcoming = [];
-    S.lastPreQueued = null;
-    if (S.pollTimer) { clearInterval(S.pollTimer); S.pollTimer = null; }
-    toast('🎲 Reiniciando en Serendipia...', '', 1800);
-    startSerendipiaMode();
-    return;
-  }
-  toast('🎲 Iniciando Serendipia...', '', 2000);
-  startDJ();
-}
 
 // ══════════════════════════════════════════════════════════
 //  TRACK POOL & WEIGHTED SELECTION
@@ -2974,18 +2903,8 @@ async function toggleDJ() {
 async function startDJ() {
   if (!S.deviceId) { toast('Reproductor no disponible. ¿Spotify Premium?', 'err'); return; }
 
-  // If no genres active and not already in serendipia mode, ask user
-  if (S.activeGenres.size === 0 && S.mode !== 'serendipia') {
-    const go = confirm('⚠️ No tienes ninguna etiqueta activa.\n\nEntrarás en modo "Serendipia" — música completamente nueva, sin filtros de gustos.\n\n¿Estás seguro?');
-    if (!go) return;
-    setMode('serendipia');
-    toast('🎲 Entrando en modo Serendipia...', '', 2500);
-  }
-
-  // For serendipia mode, load tracks from new releases (not from trackPool)
-  if (S.mode === 'serendipia') {
-    await startSerendipiaMode();
-    return;
+  if (S.activeGenres.size === 0) {
+    toast('⚠️ No hay géneros activos. Activa al menos un bloque.', 'err'); return;
   }
 
   if (!filteredPool().length) { toast('Sin tracks disponibles con los géneros seleccionados', 'err'); return; }
@@ -3013,132 +2932,6 @@ function stopDJ() {
   $('np-label').className = 'np-label'; $('np-label').textContent = 'AHORA SUENA';
 }
 
-async function startSerendipiaMode() {
-  S.djRunning = true; S.playHistory = []; S.upcoming = []; S.lastPreQueued = null;
-  $('dj-btn').textContent = '■'; $('dj-btn').classList.add('stop');
-  const djLbl = $('dj-label'); if (djLbl) { djLbl.textContent = '🎲 SERENDIPIA ●'; djLbl.classList.add('running'); }
-  $('live-dot').classList.add('on');
-  $('live-text').innerHTML = '🎲 Buscando territorio desconocido...';
-  $('np-label').className = 'np-label on'; $('np-label').textContent = '🎲 SERENDIPIA';
-
-  // Activate audio context
-  try { if (typeof S.player?.activateElement === 'function') await S.player.activateElement(); } catch {}
-
-  // First track: try API discovery (2 s timeout) → in-memory absolute fallback
-  const first = await Promise.race([
-    pickSerendipiaTrack(),
-    sleep(2500).then(() => null),
-  ]) || _serendipiaFallbackTrack();
-
-  if (!first) {
-    $('live-text').innerHTML = '🎲 Sin tracks disponibles';
-    toast('No hay tracks. Recarga la página.', 'err', 5000);
-    stopDJ(); return;
-  }
-  console.info('[Serendipia] First track:', first.name, '-', first.artist, first._novel ? '🆕' : '(conocido)');
-
-  await playTrackNow(first);
-  S.pollTimer = setInterval(poll, 1000);
-  $('live-text').innerHTML = '🎲 Modo Serendipia — Territorio desconocido';
-
-  // Pre-queue: fill with novel tracks in background, staggered
-  (async () => {
-    for (let i = 0; i < 4; i++) {
-      await sleep(900);
-      if (!S.djRunning) break;
-      const t = await pickSerendipiaTrack();
-      if (t && S.djRunning) { S.upcoming.push(t); renderQueue(); }
-    }
-  })();
-}
-
-// Last-resort in-memory track (not novel, but guarantees playback)
-function _serendipiaFallbackTrack() {
-  const pool = S.trackPool.filter(t => t?.uri);
-  if (pool.length) return pool[rand(pool.length)];
-  const mem = [...(S.topTracksLong || []), ...S.topTracks].filter(t => t?.uri);
-  if (mem.length) return _serendipiaTrack(mem[rand(mem.length)]);
-  return null;
-}
-
-// Build a serendipia track object — no extra API calls (genres/features not needed for Serendipia)
-function _serendipiaTrack(t) {
-  const artistId = t.artists?.[0]?.id;
-  // Use already-cached genres if available — do NOT fire new API calls to avoid rate limits
-  return {
-    uri: t.uri, name: t.name || '?',
-    artist: t.artists?.map(a => a.name).join(', ') || '',
-    artistId,
-    albumArt: t.album?.images?.[0]?.url || '',
-    genres: S.artistGenres[artistId] || [],
-    duration: t.duration_ms || 0,
-    popularity: t.popularity || 50,
-    _serendipia: true,
-  };
-}
-
-async function pickSerendipiaTrack() {
-  const recentUris  = new Set(S.playHistory.slice(-20).map(t => t.uri));
-  const knownUris   = new Set(S.trackPool.map(t => t.uri));          // tracks user already has
-  const knownArtIds = new Set(S.topArtists.map(a => a.id));          // artists user already knows
-
-  // "Truly novel": from an unknown artist AND not in known pool AND not recently played
-  const isNovel = t =>
-    t?.uri &&
-    !recentUris.has(t.uri) &&
-    !knownUris.has(t.uri) &&
-    !knownArtIds.has(t.artists?.[0]?.id);
-
-  // "Acceptable": at least not recently played (fallback when novel is scarce)
-  const isAcceptable = t => t?.uri && !recentUris.has(t.uri);
-
-  // ── S1: Search with genre-diverse keywords, prefer novel results ──────────────
-  try {
-    const DISCOVERY_KEYWORDS = [
-      // África
-      'ethiopian jazz', 'malian blues', 'afrobeat nigeria', 'congolese rumba',
-      'south african jazz', 'gnawa morocco', 'senegalese mbalax', 'highlife ghana',
-      // Asia
-      'city pop japan', 'korean trot', 'mongolian throat singing', 'vietnamese pop',
-      'indian classical fusion', 'persian classical', 'turkish psychedelic',
-      'chinese indie rock', 'thai luk thung', 'indonesian dangdut',
-      // Europa
-      'balkan brass', 'nordic folk', 'french chanson', 'greek rebetiko',
-      'soviet synth pop', 'polish jazz', 'romanian folk', 'portuguese fado moderno',
-      // Oceanía / otros
-      'australian aboriginal music', 'pacific reggae', 'new zealand maori',
-      // América no-mainstream
-      'haitian compas', 'colombian chicha', 'andean fusion', 'peruvian cumbia',
-      'trinidadian soca', 'jamaican rocksteady', 'cuban son montuno',
-      'bolivian huayno', 'venezuelan joropo', 'paraguayan polka',
-      // Géneros de nicho global
-      'jazz manouche', 'qawwali pakistan', 'celtic folk instrumental',
-      'klezmer revival', 'krautrock', 'afrofunk', 'tropicalia experimental',
-      'neo soul underground', 'avant garde jazz', 'chamber pop',
-    ];
-    const kw = DISCOVERY_KEYWORDS[rand(DISCOVERY_KEYWORDS.length)];
-    const data = await api(`/search?q=${encodeURIComponent(kw)}&type=track&limit=50`);
-    const items = data?.tracks?.items || [];
-    const novel = items.filter(isNovel);
-    const acceptable = items.filter(isAcceptable);
-    const pool = novel.length ? novel : acceptable;
-    if (pool.length) {
-      const pick = pool[rand(pool.length)];
-      const t = _serendipiaTrack(pick);
-      t._novel = novel.length > 0;
-      console.info('[Serendipia] S1:', pick.name, '—', pick.artists?.[0]?.name, t._novel ? '🆕' : '');
-      return t;
-    }
-  } catch (e) { console.warn('[Serendipia S1]', e?.message); }
-
-  // ── Fallback: in-memory (known music, last resort) ────────────────────────────
-  const mem = [...(S.topTracksLong || []), ...S.topTracks].filter(isAcceptable);
-  if (mem.length) return _serendipiaTrack(mem[rand(mem.length)]);
-  const pool = S.trackPool.filter(isAcceptable);
-  if (pool.length) return pool[rand(pool.length)];
-
-  return null;
-}
 async function poll() {
   if (!S.player || !S.djRunning) return;
   let ps; try { ps = await S.player.getCurrentState(); } catch { return; }
@@ -3149,18 +2942,12 @@ async function poll() {
   if (curUri && remaining > 0 && remaining < 30000 && S.lastPreQueued !== curUri) {
     S.lastPreQueued = curUri;
     let next = S.upcoming.shift();
-    if (!next) next = S.mode === 'serendipia' ? await pickSerendipiaTrack() : await pickByMode();
+    if (!next) next = await pickByMode();
     if (next) {
       await queueUri(next.uri);
+      const fill = pickFromPool();
+      if (fill) S.upcoming.push(fill);
       renderQueue();
-      // Refill upcoming in background — avoids back-to-back API calls in Serendipia mode
-      if (S.mode === 'serendipia') {
-        pickSerendipiaTrack().then(t => { if (t && S.djRunning) { S.upcoming.push(t); renderQueue(); } });
-      } else {
-        const fill = pickFromPool();
-        if (fill) S.upcoming.push(fill);
-        renderQueue();
-      }
     }
   }
 }
@@ -3664,8 +3451,8 @@ const TUT_STEPS = [
   {
     target: '#mode-chips',
     title: 'Modos de <em>Reproducción</em>',
-    text: '<strong>Mix</strong> — mezcla inteligente de tus géneros activos\n<strong>New</strong> — prioriza lanzamientos recientes\n<strong>Exp</strong> — descubre artistas similares\n<strong>Serendipia</strong> — música completamente fuera de tu zona de confort',
-    tip: '🎲 Serendipia guarda tus géneros activos y los restaura cuando vuelvas a Mix/New/Exp.',
+    text: '<strong>Mix</strong> — mezcla inteligente de tus géneros activos\n<strong>New</strong> — prioriza lanzamientos recientes\n<strong>Exp</strong> — descubre artistas similares a los que ya escuchas',
+    tip: '💡 Cambia de modo en cualquier momento, incluso con el DJ activo.',
   },
   {
     target: '#btn-label-track',
