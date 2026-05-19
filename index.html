@@ -2969,7 +2969,8 @@ async function pickSerendipiaTrack() {
   const market = S.user?.country || 'US';
   const searchDirect = async (kw) => {
     try {
-      const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(kw)}&type=track&limit=50&market=${market}`;
+      // limit=20 (max permitido por Spotify actualmente; 50 devuelve "Invalid limit")
+      const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(kw)}&type=track&limit=20&market=${market}`;
       const res = await fetch(url, { headers: { 'Authorization': `Bearer ${S.token}` } });
       if (!res.ok) {
         // Log the actual error body once per failure to diagnose
@@ -2983,8 +2984,8 @@ async function pickSerendipiaTrack() {
     } catch (e) { return null; }
   };
 
-  // Try up to 3 rounds of 2 parallel searches to find a qualifying track
-  for (let attempt = 0; attempt < 3; attempt++) {
+  // Try up to 5 rounds of 2 parallel searches (20 tracks per search → up to 200 candidates)
+  for (let attempt = 0; attempt < 5; attempt++) {
     const kw1 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
     let kw2 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
     while (kw2 === kw1) kw2 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
