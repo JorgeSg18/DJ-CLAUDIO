@@ -3088,14 +3088,21 @@ async function startDJ() {
   await playTrackNow(first);
 
   if (S.mode === 'serendipia') {
-    // Pre-cargar 2 unknowns en background para evitar autoplay de Spotify
+    // Loop de buffer continuo: mantiene S.upcoming con al menos 3 unknowns siempre
+    // Esto previene que Spotify haga autoplay con música conocida cuando se vacía la cola
     (async () => {
-      for (let i = 0; i < 2; i++) {
-        const t = await pickSerendipiaTrack();
-        if (t && S.djRunning) {
-          S.upcoming.push(t);
-          await queueUri(t.uri);
-          renderQueue();
+      while (S.djRunning && S.mode === 'serendipia') {
+        if (S.upcoming.length < 3) {
+          const t = await pickSerendipiaTrack();
+          if (t && S.djRunning && S.mode === 'serendipia') {
+            S.upcoming.push(t);
+            renderQueue();
+          } else if (!t) {
+            // Si no encuentra unknown, espera antes de reintentar
+            await sleep(5000);
+          }
+        } else {
+          await sleep(2000);
         }
       }
     })();
@@ -3121,17 +3128,28 @@ async function poll() {
   updatePlayerUI(ps);
   const remaining = ps.duration - ps.position;
   const curUri = ps.track_window?.current_track?.uri;
+
+  // En serendipia: en cuanto cambia el track actual, encolar el siguiente unknown
+  // (no esperar 30s, así Spotify nunca queda sin cola y no activa autoplay)
+  if (S.mode === 'serendipia' && curUri && S.lastPreQueued !== curUri) {
+    S.lastPreQueued = curUri;
+    let next = S.upcoming.shift();
+    if (!next) next = await pickSerendipiaTrack();
+    if (next) {
+      await queueUri(next.uri);
+      renderQueue();
+    }
+    return;
+  }
+
   if (curUri && remaining > 0 && remaining < 30000 && S.lastPreQueued !== curUri) {
     S.lastPreQueued = curUri;
     let next = S.upcoming.shift();
     if (!next) next = await pickByMode();
     if (next) {
       await queueUri(next.uri);
-      // In serendipia mode, don't backfill queue from known pool
-      if (S.mode !== 'serendipia') {
-        const fill = pickFromPool();
-        if (fill) S.upcoming.push(fill);
-      }
+      const fill = pickFromPool();
+      if (fill) S.upcoming.push(fill);
       renderQueue();
     }
   }
