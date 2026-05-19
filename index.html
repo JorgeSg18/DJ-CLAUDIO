@@ -3095,12 +3095,26 @@ async function pickSerendipiaTrack() {
   // ── S1: Search with genre-diverse keywords, prefer novel results ──────────────
   try {
     const DISCOVERY_KEYWORDS = [
-      'ethiopian jazz', 'city pop japan', 'turkish psychedelic', 'balkan brass',
-      'nordic folk', 'afrobeat 2024', 'k-indie', 'french chanson', 'tropicalia',
-      'cumbia sonidera', 'bossa nova instrumental', 'arabic pop', 'celtic folk',
-      'new wave post punk', 'jazz manouche', 'flamenco nuevo', 'malian blues',
-      'brazilian baile funk', 'indian classical fusion', 'soviet synth pop',
-      'colombian chicha', 'persian pop', 'haitian compas', 'andean fusion',
+      // África
+      'ethiopian jazz', 'malian blues', 'afrobeat nigeria', 'congolese rumba',
+      'south african jazz', 'gnawa morocco', 'senegalese mbalax', 'highlife ghana',
+      // Asia
+      'city pop japan', 'korean trot', 'mongolian throat singing', 'vietnamese pop',
+      'indian classical fusion', 'persian classical', 'turkish psychedelic',
+      'chinese indie rock', 'thai luk thung', 'indonesian dangdut',
+      // Europa
+      'balkan brass', 'nordic folk', 'french chanson', 'greek rebetiko',
+      'soviet synth pop', 'polish jazz', 'romanian folk', 'portuguese fado moderno',
+      // Oceanía / otros
+      'australian aboriginal music', 'pacific reggae', 'new zealand maori',
+      // América no-mainstream
+      'haitian compas', 'colombian chicha', 'andean fusion', 'peruvian cumbia',
+      'trinidadian soca', 'jamaican rocksteady', 'cuban son montuno',
+      'bolivian huayno', 'venezuelan joropo', 'paraguayan polka',
+      // Géneros de nicho global
+      'jazz manouche', 'qawwali pakistan', 'celtic folk instrumental',
+      'klezmer revival', 'krautrock', 'afrofunk', 'tropicalia experimental',
+      'neo soul underground', 'avant garde jazz', 'chamber pop',
     ];
     const kw = DISCOVERY_KEYWORDS[rand(DISCOVERY_KEYWORDS.length)];
     const data = await api(`/search?q=${encodeURIComponent(kw)}&type=track&limit=50`);
@@ -3116,34 +3130,6 @@ async function pickSerendipiaTrack() {
       return t;
     }
   } catch (e) { console.warn('[Serendipia S1]', e?.message); }
-
-  // ── S2: Related artists → album → tracks (musically adjacent but unknown) ─────
-  if (S.topArtists.length) {
-    try {
-      const seed = S.topArtists[rand(Math.min(S.topArtists.length, 15))];
-      const relData = await api(`/artists/${seed.id}/related-artists`);
-      // Filter to related artists the user doesn't already know
-      const unknown = (relData?.artists || []).filter(a => !knownArtIds.has(a.id));
-      if (unknown.length) {
-        const artist = unknown[rand(Math.min(unknown.length, 8))];
-        const albumsData = await api(`/artists/${artist.id}/albums?limit=10&include_groups=album,single`);
-        const albums = (albumsData?.items || []).filter(a => a?.id);
-        if (albums.length) {
-          const album = albums[rand(albums.length)];
-          const tracksData = await api(`/albums/${album.id}/tracks?limit=20`);
-          const tracks = (tracksData?.items || []).filter(isAcceptable);
-          if (tracks.length) {
-            const pick = tracks[rand(tracks.length)];
-            pick.album = { images: album.images || [], name: album.name || '' };
-            const t = _serendipiaTrack(pick);
-            t._novel = true;
-            console.info('[Serendipia] S2 related:', pick.name, '— via', artist.name, '🆕');
-            return t;
-          }
-        }
-      }
-    } catch (e) { console.warn('[Serendipia S2]', e?.message); }
-  }
 
   // ── Fallback: in-memory (known music, last resort) ────────────────────────────
   const mem = [...(S.topTracksLong || []), ...S.topTracks].filter(isAcceptable);
