@@ -2965,16 +2965,31 @@ async function pickSerendipiaTrack() {
     return true;
   };
 
+  // Direct fetch for /search — bypasses Content-Type: application/json which Spotify rejects on some GETs
+  const market = S.user?.country || 'US';
+  const searchDirect = async (kw) => {
+    try {
+      const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(kw)}&type=track&limit=50&market=${market}`;
+      const res = await fetch(url, { headers: { 'Authorization': `Bearer ${S.token}` } });
+      if (!res.ok) {
+        // Log the actual error body once per failure to diagnose
+        if (res.status !== 429) {
+          const body = await res.text().catch(() => '');
+          console.warn('[Serendipia] search', res.status, kw, body.slice(0, 200));
+        }
+        return null;
+      }
+      return await res.json().catch(() => null);
+    } catch (e) { return null; }
+  };
+
   // Try up to 3 rounds of 2 parallel searches to find a qualifying track
   for (let attempt = 0; attempt < 3; attempt++) {
     const kw1 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
     let kw2 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
     while (kw2 === kw1) kw2 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
 
-    const [r1, r2] = await Promise.all([
-      api(`/search?q=${encodeURIComponent(kw1)}&type=track&limit=50`).catch(() => null),
-      api(`/search?q=${encodeURIComponent(kw2)}&type=track&limit=50`).catch(() => null),
-    ]);
+    const [r1, r2] = await Promise.all([searchDirect(kw1), searchDirect(kw2)]);
 
     const all = [
       ...(r1?.tracks?.items || []),
