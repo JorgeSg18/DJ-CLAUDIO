@@ -549,6 +549,11 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
 /* ── MODE CHIP SUBTITLES (from tutorial analysis) ── */
 .mode-chip-sub { display:block; font-size:0.42rem; color:var(--muted); margin-top:0.15rem; line-height:1.2; letter-spacing:0.03em; opacity:0.8; }
 .mode-chip.on .mode-chip-sub { color:rgba(232,232,248,0.6); }
+/* Serendipia chip */
+.mode-chip.serendipia { border-color: rgba(248,113,113,0.35); color: var(--red); }
+.mode-chip.serendipia:hover { border-color: var(--red); background: rgba(248,113,113,0.10); color: var(--red); box-shadow: none; }
+.mode-chip.serendipia.on { border-color: var(--red); background: rgba(248,113,113,0.18); color: #fff; box-shadow: 0 0 8px rgba(248,113,113,0.4); }
+.mode-chip.serendipia.on .mode-chip-sub { color: rgba(248,113,113,0.75); }
 
 
 /* ── BLOCK HEADER EXPAND HINT (from tutorial analysis) ── */
@@ -730,6 +735,10 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
             <div class="mode-chip" data-mode="discovery" onclick="setMode('discovery')" title="Descubre artistas similares que no conoces">
               <span class="mode-chip-icon">🔭</span> Exp
               <span class="mode-chip-sub">descubrimiento</span>
+            </div>
+            <div class="mode-chip serendipia" data-mode="serendipia" onclick="activateSerendipia()" title="Música completamente desconocida — artistas nuevos, baja popularidad">
+              <span class="mode-chip-icon">🎲</span> Serendipia
+              <span class="mode-chip-sub">territorio desconocido</span>
             </div>
           </div>
           <!-- Quick actions -->
@@ -1077,6 +1086,9 @@ const S = {
   // Playlists
   userPlaylists: [],
   _playlistsUnavailable: false, // true when /me/playlists returns 403
+
+  // Serendipia
+  _preSerendipiaGenres: null, // saved activeGenres set before entering serendipia
 
   // Session
   sessionId: null,
@@ -2809,8 +2821,16 @@ function updateGenreCount() {
 }
 
 function setMode(mode) {
+  const wasSerendipia = S.mode === 'serendipia';
   S.mode = mode;
   document.querySelectorAll('.mode-card, .mode-chip').forEach(c => c.classList.toggle('on', c.dataset.mode === mode));
+  // Restore user genres when leaving serendipia
+  if (wasSerendipia && mode !== 'serendipia' && S._preSerendipiaGenres?.size) {
+    S.activeGenres = new Set(S._preSerendipiaGenres);
+    S._preSerendipiaGenres = null;
+    renderGenreGroups(); updatePoolCount();
+    toast('↩ Géneros restaurados', 'ok', 2500);
+  }
 }
 
 
@@ -2863,8 +2883,9 @@ function pickFromPool() {
 }
 
 async function pickByMode() {
-  if (S.mode === 'new')       return (await pickNewRelease()) || pickFromPool();
-  if (S.mode === 'discovery') return (await pickDiscovery())  || pickFromPool();
+  if (S.mode === 'new')        return (await pickNewRelease())      || pickFromPool();
+  if (S.mode === 'discovery')  return (await pickDiscovery())       || pickFromPool();
+  if (S.mode === 'serendipia') return (await pickSerendipiaTrack()) || null; // no fallback to known music
   return pickFromPool();
 }
 
@@ -2895,6 +2916,109 @@ async function pickDiscovery() {
 }
 
 // ══════════════════════════════════════════════════════════
+//  SERENDIPIA — música completamente desconocida
+// ══════════════════════════════════════════════════════════
+
+// Keywords that target niche / underground / non-mainstream music globally
+const SERENDIPIA_KEYWORDS = [
+  'shoegaze underground', 'lo-fi bedroom pop', 'neo-folk obscure', 'post-punk underground',
+  'ambient experimental', 'noise pop indie', 'dream pop indie', 'slowcore indie',
+  'minimal synth', 'krautrock experimental', 'free jazz avant-garde', 'microtonal music',
+  'dark ambient', 'dungeon synth', 'harsh noise wall', 'vaporwave underground',
+  'emo midwest indie', 'sadcore indie', 'indie folk obscure', 'ethereal wave',
+  'blackgaze underground', 'post-metal obscure', 'doom folk', 'neofolk pagan',
+  'coldwave minimal', 'witch house underground', 'outsider music experimental',
+  'musique concrète', 'lowercase ambient', 'field recording ambient',
+  'chamber pop obscure', 'anti-folk underground', 'tape music experimental',
+  'jazz fusion obscure', 'spiritual jazz', 'free folk weird', 'freak folk',
+  'psych folk obscure', 'forest punk', 'deep cut indie', 'post-rock obscure',
+  'darkwave underground', 'neue deutsche welle', 'japanese noise', 'taiwanese indie',
+  'korean underground', 'romanian folk obscure', 'bulgarian folk underground',
+  'afrobeat niche', 'cumbia underground', 'world music obscure', 'tibetan music',
+];
+
+async function pickSerendipiaTrack() {
+  // Build exclusion sets from everything the user has heard / is associated with
+  const recentUris = new Set(S.playHistory.slice(-30).map(t => t.uri));
+  const knownUris  = new Set(S.trackPool.map(t => t.uri));
+
+  // Every artist the user has a connection to (top artists + artists in their pool)
+  const knownArtistIds = new Set([
+    ...S.topArtists.map(a => a.id),
+    ...S.trackPool.map(t => t.artistId).filter(Boolean),
+  ]);
+  // Artist names in lowercase for fuzzy match
+  const knownArtistNames = new Set([
+    ...S.topArtists.map(a => a.name.toLowerCase()),
+    ...S.topTracks.flatMap(t => t.artists?.map(a => a.name.toLowerCase()) || []),
+    ...S.recentTracks.flatMap(t => t.artists?.map(a => a.name.toLowerCase()) || []),
+  ]);
+
+  // Triple filter: unknown artist ID + unknown artist name + low popularity
+  const isUnknown = (t) => {
+    if (!t?.uri || !t?.artists?.length) return false;
+    if (recentUris.has(t.uri) || knownUris.has(t.uri)) return false;
+    const aid = t.artists[0]?.id;
+    const aname = t.artists[0]?.name?.toLowerCase() || '';
+    if (aid && knownArtistIds.has(aid)) return false;
+    if (aname && knownArtistNames.has(aname)) return false;
+    // Key filter: popularity < 45 eliminates mainstream tracks even from unknown artists
+    if ((t.popularity ?? 100) > 45) return false;
+    return true;
+  };
+
+  // Try up to 3 rounds of 2 parallel searches to find a qualifying track
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const kw1 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
+    let kw2 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
+    while (kw2 === kw1) kw2 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
+
+    const [r1, r2] = await Promise.all([
+      api(`/search?q=${encodeURIComponent(kw1)}&type=track&limit=50`).catch(() => null),
+      api(`/search?q=${encodeURIComponent(kw2)}&type=track&limit=50`).catch(() => null),
+    ]);
+
+    const all = [
+      ...(r1?.tracks?.items || []),
+      ...(r2?.tracks?.items || []),
+    ];
+
+    const candidates = all.filter(isUnknown);
+    if (candidates.length) {
+      const t = candidates[rand(candidates.length)];
+      const artistId = t.artists?.[0]?.id || null;
+      return {
+        uri: t.uri,
+        name: t.name,
+        artist: t.artists?.map(a => a.name).join(', ') || '',
+        artistId,
+        albumArt: t.album?.images?.[0]?.url || '',
+        genres: S.artistGenres?.[artistId] || [],
+        duration: t.duration_ms || 0,
+        popularity: t.popularity || 0,
+      };
+    }
+  }
+
+  // All 3 rounds failed — could not find a truly unknown track
+  return null;
+}
+
+function activateSerendipia() {
+  if (S.mode === 'serendipia') {
+    // Toggle off — go back to mix mode
+    setMode('mix');
+    if (S.djRunning) stopDJ();
+    return;
+  }
+  // Save current genres before entering serendipia
+  S._preSerendipiaGenres = new Set(S.activeGenres);
+  S.mode = 'serendipia';
+  document.querySelectorAll('.mode-card, .mode-chip').forEach(c => c.classList.toggle('on', c.dataset.mode === 'serendipia'));
+  toast('🎲 Serendipia activado — música completamente desconocida', 'ok', 3000);
+}
+
+// ══════════════════════════════════════════════════════════
 //  DJ ENGINE
 // ══════════════════════════════════════════════════════════
 async function toggleDJ() {
@@ -2903,11 +3027,13 @@ async function toggleDJ() {
 async function startDJ() {
   if (!S.deviceId) { toast('Reproductor no disponible. ¿Spotify Premium?', 'err'); return; }
 
-  if (S.activeGenres.size === 0) {
-    toast('⚠️ No hay géneros activos. Activa al menos un bloque.', 'err'); return;
+  if (S.mode !== 'serendipia') {
+    if (S.activeGenres.size === 0) {
+      toast('⚠️ No hay géneros activos. Activa al menos un bloque.', 'err'); return;
+    }
+    if (!filteredPool().length) { toast('Sin tracks disponibles con los géneros seleccionados', 'err'); return; }
   }
 
-  if (!filteredPool().length) { toast('Sin tracks disponibles con los géneros seleccionados', 'err'); return; }
   S.djRunning = true; S.playHistory = []; S.upcoming = []; S.lastPreQueued = null;
   $('dj-btn').textContent = '■'; $('dj-btn').classList.add('stop');
   const djLbl = $('dj-label'); if (djLbl) { djLbl.textContent = 'DJ ACTIVO ●'; djLbl.classList.add('running'); }
@@ -2916,10 +3042,16 @@ async function startDJ() {
   $('np-label').className = 'np-label on'; $('np-label').textContent = 'EN VIVO';
 
   const first = await pickByMode();
-  if (!first) { toast('No se encontró track', 'err'); stopDJ(); return; }
+  if (!first) {
+    toast(S.mode === 'serendipia' ? '🎲 No se encontró música desconocida. Intenta de nuevo.' : 'No se encontró track', 'err');
+    stopDJ(); return;
+  }
   await playTrackNow(first);
 
-  for (let i = 0; i < 4; i++) { const t = pickFromPool(); if (t) S.upcoming.push(t); }
+  // In serendipia mode, don't pre-fill queue from known pool
+  if (S.mode !== 'serendipia') {
+    for (let i = 0; i < 4; i++) { const t = pickFromPool(); if (t) S.upcoming.push(t); }
+  }
   renderQueue();
   S.pollTimer = setInterval(poll, 1000);
 }
@@ -2945,8 +3077,11 @@ async function poll() {
     if (!next) next = await pickByMode();
     if (next) {
       await queueUri(next.uri);
-      const fill = pickFromPool();
-      if (fill) S.upcoming.push(fill);
+      // In serendipia mode, don't backfill queue from known pool
+      if (S.mode !== 'serendipia') {
+        const fill = pickFromPool();
+        if (fill) S.upcoming.push(fill);
+      }
       renderQueue();
     }
   }
