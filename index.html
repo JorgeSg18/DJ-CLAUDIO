@@ -2952,16 +2952,16 @@ async function pickSerendipiaTrack() {
     ...S.recentTracks.flatMap(t => t.artists?.map(a => a.name.toLowerCase()) || []),
   ]);
 
-  // Triple filter: unknown artist ID + unknown artist name + low popularity
-  const isUnknown = (t) => {
+  // Triple filter parametrizado: lo crítico es que el artista sea desconocido
+  // popularityMax se va relajando si no encontramos nada
+  const isUnknown = (t, popularityMax) => {
     if (!t?.uri || !t?.artists?.length) return false;
     if (recentUris.has(t.uri) || knownUris.has(t.uri)) return false;
     const aid = t.artists[0]?.id;
     const aname = t.artists[0]?.name?.toLowerCase() || '';
     if (aid && knownArtistIds.has(aid)) return false;
     if (aname && knownArtistNames.has(aname)) return false;
-    // Key filter: popularity < 45 eliminates mainstream tracks even from unknown artists
-    if ((t.popularity ?? 100) > 45) return false;
+    if ((t.popularity ?? 100) > popularityMax) return false;
     return true;
   };
 
@@ -2986,8 +2986,14 @@ async function pickSerendipiaTrack() {
     } catch (e) { return null; }
   };
 
-  // Try up to 5 rounds of 2 parallel searches (20 tracks per search → up to 200 candidates)
-  for (let attempt = 0; attempt < 5; attempt++) {
+  // 6 rondas con popularity threshold progresivo: estricto → relajado
+  // Rondas 1-2: pop < 35 (verdaderamente underground)
+  // Rondas 3-4: pop < 55 (underground/indie)
+  // Rondas 5-6: pop < 75 (cualquier artista desconocido, aunque tenga algo de buzz)
+  const POP_THRESHOLDS = [35, 35, 55, 55, 75, 75];
+
+  for (let attempt = 0; attempt < POP_THRESHOLDS.length; attempt++) {
+    const popMax = POP_THRESHOLDS[attempt];
     const kw1 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
     let kw2 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
     while (kw2 === kw1) kw2 = SERENDIPIA_KEYWORDS[rand(SERENDIPIA_KEYWORDS.length)];
@@ -2999,7 +3005,8 @@ async function pickSerendipiaTrack() {
       ...(r2?.tracks?.items || []),
     ];
 
-    const candidates = all.filter(isUnknown);
+    const candidates = all.filter(t => isUnknown(t, popMax));
+    console.log(`[Serendipia] ronda ${attempt+1} kw=${kw1}/${kw2} → ${all.length} tracks, ${candidates.length} pasaron filtro (pop<${popMax})`);
     if (candidates.length) {
       const t = candidates[rand(candidates.length)];
       const artistId = t.artists?.[0]?.id || null;
