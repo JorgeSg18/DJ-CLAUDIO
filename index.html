@@ -3201,17 +3201,20 @@ async function nextTrack() {
     }
   }
   if (S.djRunning) {
-    let next = S.upcoming.shift();
-    if (!next) next = await pickByMode();
-    if (next) {
-      await playTrackNow(next);
-      // En serendipia NO rellenar con pickFromPool (devolvería tracks conocidos)
-      // El buffer loop de fondo se encarga de mantener upcoming lleno con unknowns
-      if (S.mode !== 'serendipia') {
+    if (S.mode === 'serendipia') {
+      // En serendipia la cola de Spotify ya tiene unknowns en orden — skip nativo conserva la cola
+      // playTrackNow(uri) llamaría a PUT /play que RESETEA el contexto, borrando los próximos unknowns
+      await S.player.nextTrack();
+      // poll() detectará el cambio de track y encolará el siguiente unknown automáticamente
+    } else {
+      let next = S.upcoming.shift();
+      if (!next) next = await pickByMode();
+      if (next) {
+        await playTrackNow(next);
         const fill = pickFromPool();
         if (fill) S.upcoming.push(fill);
+        renderQueue();
       }
-      renderQueue();
     }
   } else {
     await S.player.nextTrack();
