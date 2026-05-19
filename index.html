@@ -2116,7 +2116,9 @@ async function api(path, opts = {}, _retry = 0) {
   if (res.status === 204 || res.status === 202) return null;
   if (!res.ok) {
     // 403 = restricted endpoint in dev mode — silent, no console spam
-    if (res.status !== 403) console.warn('API', res.status, path);
+    // 400 on /search = Spotify rejected the query (common with multi-word in serendipia) — silent
+    const silent = res.status === 403 || (res.status === 400 && path.startsWith('/search'));
+    if (!silent) console.warn('API', res.status, path);
     return null;
   }
   return res.json().catch(() => null);
@@ -2919,22 +2921,18 @@ async function pickDiscovery() {
 //  SERENDIPIA — música completamente desconocida
 // ══════════════════════════════════════════════════════════
 
-// Keywords that target niche / underground / non-mainstream music globally
+// Single-word niche genres — Spotify search handles these as genre tags reliably (multi-word queries often return 400)
 const SERENDIPIA_KEYWORDS = [
-  'shoegaze underground', 'lo-fi bedroom pop', 'neo-folk obscure', 'post-punk underground',
-  'ambient experimental', 'noise pop indie', 'dream pop indie', 'slowcore indie',
-  'minimal synth', 'krautrock experimental', 'free jazz avant-garde', 'microtonal music',
-  'dark ambient', 'dungeon synth', 'harsh noise wall', 'vaporwave underground',
-  'emo midwest indie', 'sadcore indie', 'indie folk obscure', 'ethereal wave',
-  'blackgaze underground', 'post-metal obscure', 'doom folk', 'neofolk pagan',
-  'coldwave minimal', 'witch house underground', 'outsider music experimental',
-  'musique concrète', 'lowercase ambient', 'field recording ambient',
-  'chamber pop obscure', 'anti-folk underground', 'tape music experimental',
-  'jazz fusion obscure', 'spiritual jazz', 'free folk weird', 'freak folk',
-  'psych folk obscure', 'forest punk', 'deep cut indie', 'post-rock obscure',
-  'darkwave underground', 'neue deutsche welle', 'japanese noise', 'taiwanese indie',
-  'korean underground', 'romanian folk obscure', 'bulgarian folk underground',
-  'afrobeat niche', 'cumbia underground', 'world music obscure', 'tibetan music',
+  'shoegaze', 'slowcore', 'krautrock', 'noise', 'drone', 'dungeon', 'blackgaze',
+  'coldwave', 'darkwave', 'minimalwave', 'witchhouse', 'vaporwave', 'hauntology',
+  'glitch', 'idm', 'microhouse', 'lowercase', 'fieldrecording', 'musiqueconcrete',
+  'freejazz', 'spiritualjazz', 'ethio-jazz', 'freefolk', 'freakfolk', 'antifolk',
+  'neofolk', 'darkfolk', 'forestfolk', 'gothfolk', 'psychfolk', 'wyrdfolk',
+  'sadcore', 'emoviolence', 'screamo', 'mathrock', 'postrock', 'postmetal',
+  'doomgaze', 'sludge', 'kosmische', 'zeuhl', 'rio', 'avantprog',
+  'chillwave', 'dreampop', 'bedroompop', 'twee', 'jangle', 'midwestemo',
+  'cumbia', 'champeta', 'kuduro', 'gqom', 'amapiano', 'baile', 'dembow',
+  'gamelan', 'qawwali', 'gnawa', 'fado', 'rebetiko', 'enka', 'shibuya-kei',
 ];
 
 async function pickSerendipiaTrack() {
@@ -3004,18 +3002,22 @@ async function pickSerendipiaTrack() {
   return null;
 }
 
-function activateSerendipia() {
+async function activateSerendipia() {
   if (S.mode === 'serendipia') {
-    // Toggle off — go back to mix mode
-    setMode('mix');
+    // Toggle off — stop DJ and go back to mix mode (setMode restores genres)
     if (S.djRunning) stopDJ();
+    setMode('mix');
     return;
   }
-  // Save current genres before entering serendipia
+  // Save current genres, then clear all genre blocks
   S._preSerendipiaGenres = new Set(S.activeGenres);
+  S.activeGenres.clear();
   S.mode = 'serendipia';
   document.querySelectorAll('.mode-card, .mode-chip').forEach(c => c.classList.toggle('on', c.dataset.mode === 'serendipia'));
-  toast('🎲 Serendipia activado — música completamente desconocida', 'ok', 3000);
+  renderGenreGroups(); updatePoolCount();
+  toast('🎲 Serendipia activado — buscando música desconocida...', 'ok', 2500);
+  // Auto-start the DJ if not already running
+  if (!S.djRunning) await startDJ();
 }
 
 // ══════════════════════════════════════════════════════════
