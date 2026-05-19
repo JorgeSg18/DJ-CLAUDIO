@@ -3502,11 +3502,24 @@ function renderQueue() {
         <button class="q-action-btn remove" title="Eliminar de cola">✕</button>
       </div>`;
 
+    // Helper: jump to a queue track without losing the rest of the queue
+    const jumpToQueueIndex = async (idx) => {
+      const track = S.upcoming.splice(idx, 1)[0];
+      if (!track) return;
+      await playTrackNow(track);
+      // playTrackNow hace PUT /play que RESETEA la cola de Spotify.
+      // Re-encolamos los upcoming restantes para conservar la cola visible.
+      S.lastPreQueued = track.uri; // evita que poll() encole un duplicado
+      for (const t of S.upcoming.slice(0, 5)) {
+        await queueUri(t.uri);
+      }
+      renderQueue();
+    };
+
     // Queue item click → play now
     d.querySelector('.q-action-btn').onclick = e => {
       e.stopPropagation();
-      const track = S.upcoming.splice(i, 1)[0];
-      playTrackNow(track).then(() => renderQueue());
+      jumpToQueueIndex(i);
     };
     // Remove from queue
     d.querySelector('.q-action-btn.remove').onclick = e => {
@@ -3515,10 +3528,7 @@ function renderQueue() {
       renderQueue();
     };
     // Click anywhere else on row also plays
-    d.onclick = () => {
-      const track = S.upcoming.splice(i, 1)[0];
-      playTrackNow(track).then(() => renderQueue());
-    };
+    d.onclick = () => jumpToQueueIndex(i);
 
     // Genre pills
     const pillsEl = d.querySelector('.q-pills');
