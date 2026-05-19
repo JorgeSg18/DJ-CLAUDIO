@@ -3053,8 +3053,9 @@ async function activateSerendipia() {
   document.querySelectorAll('.mode-card, .mode-chip').forEach(c => c.classList.toggle('on', c.dataset.mode === 'serendipia'));
   renderGenreGroups(); updatePoolCount();
   toast('🎲 Serendipia activado — buscando música desconocida...', 'ok', 2500);
-  // Auto-start the DJ if not already running
-  if (!S.djRunning) await startDJ();
+  // Si el DJ ya está corriendo en otro modo, detenerlo primero para limpiar la cola de tracks conocidos
+  if (S.djRunning) stopDJ();
+  await startDJ();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -3204,8 +3205,12 @@ async function nextTrack() {
     if (!next) next = await pickByMode();
     if (next) {
       await playTrackNow(next);
-      const fill = pickFromPool();
-      if (fill) S.upcoming.push(fill);
+      // En serendipia NO rellenar con pickFromPool (devolvería tracks conocidos)
+      // El buffer loop de fondo se encarga de mantener upcoming lleno con unknowns
+      if (S.mode !== 'serendipia') {
+        const fill = pickFromPool();
+        if (fill) S.upcoming.push(fill);
+      }
       renderQueue();
     }
   } else {
